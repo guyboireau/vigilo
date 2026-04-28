@@ -41,7 +41,7 @@ export default function Sidebar({ profile, onAnalyze, analyzing }: SidebarProps)
           <Shield className="h-4 w-4 text-primary-foreground" />
         </div>
         <div>
-          <p className="text-sm font-bold text-white">Vigilo</p>
+          <p className="text-sm font-bold text-white">CIdar</p>
           <p className="text-[10px] text-sidebar-foreground/50 leading-none">Infra Health</p>
         </div>
       </div>

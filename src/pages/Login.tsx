@@ -49,7 +49,7 @@ export default function Login() {
             <Shield className="h-6 w-6 text-primary-foreground" />
           </div>
           <div className="text-center">
-            <h1 className="text-2xl font-bold tracking-tight">Vigilo</h1>
+            <h1 className="text-2xl font-bold tracking-tight">CIdar</h1>
             <p className="text-sm text-muted-foreground">Surveillance infra en temps réel</p>
           </div>
         </div>

@@ -134,7 +134,6 @@ async function checkCloudflare(
 ): Promise<CheckResult> {
   try {
     if (workerId) {
-      // Check worker deployments via Workers API
       const accountRes = await fetch('https://api.cloudflare.com/client/v4/accounts', {
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -170,6 +169,140 @@ async function checkCloudflare(
   }
 }
 
+// ── Email report via Resend ──────────────────────────────────────────────────
+async function sendDailyReport(
+  email: string,
+  projects: { name: string; overall_status: string }[]
+) {
+  const resendKey = Deno.env.get('RESEND_API_KEY')
+  if (!resendKey) return
+
+  const failures = projects.filter(p => p.overall_status === 'failure')
+  const warnings = projects.filter(p => p.overall_status === 'warning')
+  const nominal = projects.filter(p => !p.overall_status || p.overall_status === 'success')
+
+  const statusEmoji = (s: string) =>
+    s === 'success' ? '✅' : s === 'failure' ? '❌' : s === 'warning' ? '⚠️' : '—'
+
+  const rows = projects
+    .map(p => `<tr><td style="padding:6px 12px;border-bottom:1px solid #e5e7eb">${p.name}</td><td style="padding:6px 12px;border-bottom:1px solid #e5e7eb">${statusEmoji(p.overall_status)} ${p.overall_status}</td></tr>`)
+    .join('')
+
+  const subject = failures.length
+    ? `🚨 CIdar — ${failures.length} projet(s) en erreur`
+    : warnings.length
+    ? `⚠️ CIdar — ${warnings.length} warning(s) détecté(s)`
+    : `✅ CIdar — Tous les projets sont nominaux`
+
+  const html = `
+    <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
+      <div style="background:#0f172a;padding:20px 24px;border-radius:8px 8px 0 0">
+        <h1 style="color:#fff;margin:0;font-size:18px">CIdar — Rapport quotidien</h1>
+        <p style="color:#94a3b8;margin:4px 0 0;font-size:13px">${new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+      </div>
+      <div style="background:#f8fafc;padding:20px 24px">
+        <div style="display:flex;gap:12px;margin-bottom:20px">
+          <div style="flex:1;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px;text-align:center">
+            <div style="font-size:24px;font-weight:700;color:#10b981">${nominal.length}</div>
+            <div style="font-size:12px;color:#6b7280">Nominal</div>
+          </div>
+          <div style="flex:1;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px;text-align:center">
+            <div style="font-size:24px;font-weight:700;color:#f59e0b">${warnings.length}</div>
+            <div style="font-size:12px;color:#6b7280">Warnings</div>
+          </div>
+          <div style="flex:1;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px;text-align:center">
+            <div style="font-size:24px;font-weight:700;color:#ef4444">${failures.length}</div>
+            <div style="font-size:12px;color:#6b7280">Erreurs</div>
+          </div>
+        </div>
+        <table style="width:100%;background:#fff;border:1px solid #e5e7eb;border-radius:8px;border-collapse:collapse">
+          <thead><tr style="background:#f1f5f9"><th style="padding:8px 12px;text-align:left;font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase">Projet</th><th style="padding:8px 12px;text-align:left;font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase">Statut</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <p style="margin-top:16px;text-align:center"><a href="https://cidar.vercel.app" style="background:#0f172a;color:#fff;padding:8px 20px;border-radius:6px;text-decoration:none;font-size:13px">Voir le dashboard →</a></p>
+      </div>
+    </div>
+  `
+
+  await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: 'CIdar <reports@cidar.dev>',
+      to: [email],
+      subject,
+      html,
+    }),
+  })
+}
+
+// ── Check all projects for one user ─────────────────────────────────────────
+async function checkUserProjects(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  projectId?: string
+) {
+  const { data: accounts } = await supabase
+    .from('linked_accounts')
+    .select('provider, access_token, username')
+    .eq('user_id', userId)
+
+  const tokens: Record<string, { token: string; username?: string }> = {}
+  for (const a of accounts ?? []) {
+    tokens[a.provider] = { token: a.access_token, username: a.username }
+  }
+
+  let projectsQuery = supabase.from('projects').select('*').eq('user_id', userId).eq('enabled', true)
+  if (projectId) projectsQuery = projectsQuery.eq('id', projectId)
+  const { data: projects } = await projectsQuery
+
+  if (!projects?.length) return []
+
+  return Promise.all(
+    projects.map(async (project) => {
+      const [githubResult, gitlabResult, vercelResult, cloudflareResult] = await Promise.all([
+        project.github_owner && project.github_repo && tokens.github
+          ? checkGitHub(project.github_owner, project.github_repo, tokens.github.token)
+          : Promise.resolve(null),
+        project.gitlab_namespace && project.gitlab_project && tokens.gitlab
+          ? checkGitLab(project.gitlab_namespace, project.gitlab_project, tokens.gitlab.token)
+          : Promise.resolve(null),
+        project.vercel_project_id && tokens.vercel
+          ? checkVercel(project.vercel_project_id, tokens.vercel.token)
+          : Promise.resolve(null),
+        tokens.cloudflare
+          ? checkCloudflare(tokens.cloudflare.token, project.cloudflare_worker_name, project.cloudflare_zone_id)
+          : Promise.resolve(null),
+      ])
+
+      const statuses = [githubResult?.status, gitlabResult?.status, vercelResult?.status, cloudflareResult?.status].filter(Boolean) as HealthStatus[]
+      const overall: HealthStatus = statuses.includes('failure') ? 'failure'
+        : statuses.includes('warning') ? 'warning'
+        : statuses.includes('success') ? 'success'
+        : 'unknown'
+
+      const { data: check } = await supabase
+        .from('health_checks')
+        .insert({
+          project_id: project.id,
+          user_id: userId,
+          github_status: githubResult?.status ?? null,
+          github_data: githubResult,
+          gitlab_status: gitlabResult?.status ?? null,
+          gitlab_data: gitlabResult,
+          vercel_status: vercelResult?.status ?? null,
+          vercel_data: vercelResult,
+          cloudflare_status: cloudflareResult?.status ?? null,
+          cloudflare_data: cloudflareResult,
+        })
+        .select()
+        .single()
+
+      return { check, name: project.name, overall_status: overall }
+    })
+  )
+}
+
 // ── Main handler ────────────────────────────────────────────────────────────
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -180,75 +313,47 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
+    const authHeader = req.headers.get('Authorization') ?? ''
+    const token = authHeader.replace('Bearer ', '')
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    const body = await req.json().catch(() => ({}))
+    const isCron = body.run_all === true && token === serviceRoleKey
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
+    if (isCron) {
+      // Daily cron: check all users and send email reports
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, email')
+
+      const allResults = await Promise.all(
+        (profiles ?? []).map(async (profile) => {
+          const results = await checkUserProjects(supabase, profile.id)
+          if (results.length > 0 && profile.email) {
+            await sendDailyReport(
+              profile.email,
+              results.map(r => ({ name: r.name, overall_status: r.overall_status }))
+            )
+          }
+          return results
+        })
+      )
+
+      return new Response(
+        JSON.stringify({ run_all: true, users: profiles?.length ?? 0, checks: allResults.flat().length }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Normal user-triggered check
+    if (!authHeader) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
     if (authError || !user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
 
-    const body = await req.json().catch(() => ({}))
-    const { project_id, user_id } = body
-
-    // Load linked accounts (tokens)
-    const { data: accounts } = await supabase
-      .from('linked_accounts')
-      .select('provider, access_token, username')
-      .eq('user_id', user.id)
-
-    const tokens: Record<string, { token: string; username?: string }> = {}
-    for (const a of accounts ?? []) {
-      tokens[a.provider] = { token: a.access_token, username: a.username }
-    }
-
-    // Determine which projects to check
-    let projectsQuery = supabase.from('projects').select('*').eq('user_id', user.id).eq('enabled', true)
-    if (project_id) projectsQuery = projectsQuery.eq('id', project_id)
-    const { data: projects } = await projectsQuery
-
-    if (!projects?.length) {
-      return new Response(JSON.stringify([]), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-    }
-
-    const results = await Promise.all(
-      projects.map(async (project) => {
-        const [githubResult, gitlabResult, vercelResult, cloudflareResult] = await Promise.all([
-          project.github_owner && project.github_repo && tokens.github
-            ? checkGitHub(project.github_owner, project.github_repo, tokens.github.token)
-            : Promise.resolve(null),
-          project.gitlab_namespace && project.gitlab_project && tokens.gitlab
-            ? checkGitLab(project.gitlab_namespace, project.gitlab_project, tokens.gitlab.token)
-            : Promise.resolve(null),
-          project.vercel_project_id && tokens.vercel
-            ? checkVercel(project.vercel_project_id, tokens.vercel.token)
-            : Promise.resolve(null),
-          tokens.cloudflare
-            ? checkCloudflare(tokens.cloudflare.token, project.cloudflare_worker_name, project.cloudflare_zone_id)
-            : Promise.resolve(null),
-        ])
-
-        const { data: check } = await supabase
-          .from('health_checks')
-          .insert({
-            project_id: project.id,
-            user_id: user.id,
-            github_status: githubResult?.status ?? null,
-            github_data: githubResult,
-            gitlab_status: gitlabResult?.status ?? null,
-            gitlab_data: gitlabResult,
-            vercel_status: vercelResult?.status ?? null,
-            vercel_data: vercelResult,
-            cloudflare_status: cloudflareResult?.status ?? null,
-            cloudflare_data: cloudflareResult,
-          })
-          .select()
-          .single()
-
-        return check
-      })
-    )
+    const results = await checkUserProjects(supabase, user.id, body.project_id)
+    const checks = results.map(r => r.check)
 
     return new Response(
-      JSON.stringify(project_id ? results[0] : results),
+      JSON.stringify(body.project_id ? checks[0] : checks),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (err) {
