@@ -1,12 +1,13 @@
+import { useState } from 'react'
 import { CheckCircle2, XCircle, AlertTriangle, FolderGit2 } from 'lucide-react'
 import { useSession } from '@/hooks/useAuth'
-import { useProjectsWithHealth } from '@/hooks/useProjects'
+import { useProjectsWithHealth, useDeleteProject } from '@/hooks/useProjects'
 import { useTriggerHealthCheck } from '@/hooks/useHealth'
 import { formatDate } from '@/lib/utils'
 import KpiCard from '@/components/features/dashboard/KpiCard'
 import ProjectCard from '@/components/features/dashboard/ProjectCard'
-import { useDeleteProject } from '@/hooks/useProjects'
-import type { HealthStatus } from '@/types'
+import ProjectDetailDialog from '@/components/features/dashboard/ProjectDetailDialog'
+import type { HealthStatus, HealthCheckResult } from '@/types'
 
 export default function Dashboard() {
   const session = useSession()
@@ -14,6 +15,8 @@ export default function Dashboard() {
   const { data: projects = [], isLoading, dataUpdatedAt } = useProjectsWithHealth(userId)
   const triggerCheck = useTriggerHealthCheck(userId)
   const deleteProject = useDeleteProject(userId)
+
+  const [selectedProject, setSelectedProject] = useState<any | null>(null)
 
   const total = projects.length
   const nominal = projects.filter((p: any) => !p.overall_status || p.overall_status === 'success').length
@@ -82,6 +85,7 @@ export default function Dashboard() {
                 cloudflareStatus={p.cloudflare_status as HealthStatus}
                 overallStatus={p.overall_status as HealthStatus}
                 checkedAt={p.checked_at}
+                onCardClick={() => setSelectedProject(p)}
                 onRefresh={() => triggerCheck.mutate(p.id)}
                 onDelete={() => deleteProject.mutate(p.id)}
                 refreshing={triggerCheck.isPending && triggerCheck.variables === p.id}
@@ -90,6 +94,27 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      <ProjectDetailDialog
+        open={!!selectedProject}
+        onOpenChange={open => { if (!open) setSelectedProject(null) }}
+        project={selectedProject ? {
+          name: selectedProject.name,
+          github_repo: selectedProject.github_repo,
+          gitlab_project: selectedProject.gitlab_project,
+          vercel_project_id: selectedProject.vercel_project_id,
+          cloudflare_worker_name: selectedProject.cloudflare_worker_name,
+          github_status: selectedProject.github_status as HealthStatus,
+          github_data: selectedProject.github_data as HealthCheckResult,
+          gitlab_status: selectedProject.gitlab_status as HealthStatus,
+          gitlab_data: selectedProject.gitlab_data as HealthCheckResult,
+          vercel_status: selectedProject.vercel_status as HealthStatus,
+          vercel_data: selectedProject.vercel_data as HealthCheckResult,
+          cloudflare_status: selectedProject.cloudflare_status as HealthStatus,
+          cloudflare_data: selectedProject.cloudflare_data as HealthCheckResult,
+          checked_at: selectedProject.checked_at,
+        } : null}
+      />
     </div>
   )
 }

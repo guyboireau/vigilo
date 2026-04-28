@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ResourceSelect } from '@/components/ui/resource-select'
 import { useSession } from '@/hooks/useAuth'
 import { useProjectsWithHealth, useCreateProject, useUpdateProject, useDeleteProject } from '@/hooks/useProjects'
+import { useTriggerHealthCheck } from '@/hooks/useHealth'
 import { useLinkedAccounts } from '@/hooks/useIntegrations'
 import { getGithubRepos, getGitlabProjects, getVercelProjects, getCloudflareResources } from '@/services/resources'
 import type { GithubRepo, GitlabProject, VercelProject, CloudflareResources } from '@/services/resources'
@@ -36,6 +37,7 @@ export default function Projects() {
   const createProject = useCreateProject(userId)
   const updateProject = useUpdateProject(userId)
   const deleteProject = useDeleteProject(userId)
+  const triggerCheck = useTriggerHealthCheck(userId)
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
@@ -109,7 +111,8 @@ export default function Projects() {
     if (editingProject) {
       await updateProject.mutateAsync({ id: editingProject.id, updates: payload })
     } else {
-      await createProject.mutateAsync(payload)
+      const created = await createProject.mutateAsync(payload)
+      if (created?.id) triggerCheck.mutate(created.id)
     }
     setDialogOpen(false)
     reset({})

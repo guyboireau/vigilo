@@ -20,6 +20,7 @@ interface ProjectCardProps {
   checkedAt?: string | null
   onRefresh?: () => void
   onDelete?: () => void
+  onCardClick?: () => void
   refreshing?: boolean
 }
 
@@ -33,7 +34,7 @@ const overallBorder: Record<string, string> = {
 export default function ProjectCard({
   name, githubRepo, gitlabProject, vercelProjectId, cloudflareWorkerName,
   githubStatus, gitlabStatus, vercelStatus, cloudflareStatus, overallStatus,
-  checkedAt, onRefresh, onDelete, refreshing,
+  checkedAt, onRefresh, onDelete, onCardClick, refreshing,
 }: ProjectCardProps) {
   const borderClass = overallStatus ? (overallBorder[overallStatus] ?? 'border-border') : 'border-border'
 
@@ -45,7 +46,10 @@ export default function ProjectCard({
   ].filter(s => s.show)
 
   return (
-    <div className={cn('rounded-lg border bg-card p-4 flex flex-col gap-3 hover:border-border/80 transition-colors', borderClass)}>
+    <div
+      className={cn('rounded-lg border bg-card p-4 flex flex-col gap-3 transition-colors', borderClass, onCardClick && 'cursor-pointer hover:bg-muted/30')}
+      onClick={onCardClick}
+    >
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
@@ -93,7 +97,7 @@ export default function ProjectCard({
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-1.5 pt-0.5 border-t border-border/50">
+      <div className="flex items-center gap-1.5 pt-0.5 border-t border-border/50" onClick={e => e.stopPropagation()}>
         <Button
           variant="ghost"
           size="sm"
