@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useState, useEffect } from 'react'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Plus, FolderGit2, Pencil, Trash2 } from 'lucide-react'
@@ -7,31 +7,32 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { ResourceSelect } from '@/components/ui/resource-select'
 import { useSession } from '@/hooks/useAuth'
 import { useProjectsWithHealth, useCreateProject, useUpdateProject, useDeleteProject } from '@/hooks/useProjects'
+import { useLinkedAccounts } from '@/hooks/useIntegrations'
+import { getGithubRepos, getGitlabProjects, getVercelProjects, getCloudflareResources } from '@/services/resources'
+import type { GithubRepo, GitlabProject, VercelProject, CloudflareResources } from '@/services/resources'
 import StatusBadge from '@/components/features/dashboard/StatusBadge'
 import type { HealthStatus, Project } from '@/types'
 
 const schema = z.object({
   name: z.string().min(1, 'Nom requis'),
-  github_owner: z.string().optional(),
   github_repo: z.string().optional(),
-  gitlab_namespace: z.string().optional(),
   gitlab_project: z.string().optional(),
   vercel_project_id: z.string().optional(),
-  cloudflare_zone_id: z.string().optional(),
   cloudflare_worker_name: z.string().optional(),
+  cloudflare_zone_id: z.string().optional(),
 })
 type FormData = z.infer<typeof schema>
 
-function emptyToNull(v: string | undefined): string | null {
-  return v && v.trim() ? v.trim() : null
-}
+interface ResourceState<T> { data: T[]; loading: boolean }
 
 export default function Projects() {
   const session = useSession()
   const userId = session?.user?.id ?? ''
   const { data: projects = [], isLoading } = useProjectsWithHealth(userId)
+  const { data: accounts = [] } = useLinkedAccounts(userId)
   const createProject = useCreateProject(userId)
   const updateProject = useUpdateProject(userId)
   const deleteProject = useDeleteProject(userId)
@@ -39,9 +40,37 @@ export default function Projects() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const [githubRepos, setGithubRepos] = useState<ResourceState<GithubRepo>>({ data: [], loading: false })
+  const [gitlabProjects, setGitlabProjects] = useState<ResourceState<GitlabProject>>({ data: [], loading: false })
+  const [vercelProjects, setVercelProjects] = useState<ResourceState<VercelProject>>({ data: [], loading: false })
+  const [cfResources, setCfResources] = useState<{ workers: CloudflareResources['workers']; zones: CloudflareResources['zones']; loading: boolean }>({ workers: [], zones: [], loading: false })
+
+  const isConnected = (p: string) => accounts.some(a => a.provider === p)
+
+  const { control, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
+
+  useEffect(() => {
+    if (!dialogOpen) return
+
+    if (isConnected('github') && githubRepos.data.length === 0) {
+      setGithubRepos({ data: [], loading: true })
+      getGithubRepos().then(d => setGithubRepos({ data: d, loading: false })).catch(() => setGithubRepos({ data: [], loading: false }))
+    }
+    if (isConnected('gitlab') && gitlabProjects.data.length === 0) {
+      setGitlabProjects({ data: [], loading: true })
+      getGitlabProjects().then(d => setGitlabProjects({ data: d, loading: false })).catch(() => setGitlabProjects({ data: [], loading: false }))
+    }
+    if (isConnected('vercel') && vercelProjects.data.length === 0) {
+      setVercelProjects({ data: [], loading: true })
+      getVercelProjects().then(d => setVercelProjects({ data: d, loading: false })).catch(() => setVercelProjects({ data: [], loading: false }))
+    }
+    if (isConnected('cloudflare') && cfResources.workers.length === 0 && cfResources.zones.length === 0) {
+      setCfResources(s => ({ ...s, loading: true }))
+      getCloudflareResources().then(d => setCfResources({ workers: d.workers ?? [], zones: d.zones ?? [], loading: false })).catch(() => setCfResources({ workers: [], zones: [], loading: false }))
+    }
+  }, [dialogOpen, accounts])
 
   function openCreate() {
     setEditingProject(null)
@@ -53,28 +82,30 @@ export default function Projects() {
     setEditingProject(p)
     reset({
       name: p.name,
-      github_owner: p.github_owner ?? '',
-      github_repo: p.github_repo ?? '',
-      gitlab_namespace: p.gitlab_namespace ?? '',
-      gitlab_project: p.gitlab_project ?? '',
+      github_repo: p.github_repo ? `${p.github_owner}/${p.github_repo}` : '',
+      gitlab_project: p.gitlab_project ? `${p.gitlab_namespace}/${p.gitlab_project}` : '',
       vercel_project_id: p.vercel_project_id ?? '',
-      cloudflare_zone_id: p.cloudflare_zone_id ?? '',
       cloudflare_worker_name: p.cloudflare_worker_name ?? '',
+      cloudflare_zone_id: p.cloudflare_zone_id ?? '',
     })
     setDialogOpen(true)
   }
 
   async function onSubmit(data: FormData) {
+    const [ghOwner, ghRepo] = (data.github_repo ?? '').split('/')
+    const [glNamespace, glProject] = (data.gitlab_project ?? '').split('/')
+
     const payload = {
       name: data.name,
-      github_owner: emptyToNull(data.github_owner),
-      github_repo: emptyToNull(data.github_repo),
-      gitlab_namespace: emptyToNull(data.gitlab_namespace),
-      gitlab_project: emptyToNull(data.gitlab_project),
-      vercel_project_id: emptyToNull(data.vercel_project_id),
-      cloudflare_zone_id: emptyToNull(data.cloudflare_zone_id),
-      cloudflare_worker_name: emptyToNull(data.cloudflare_worker_name),
+      github_owner: ghOwner || null,
+      github_repo: ghRepo || null,
+      gitlab_namespace: glNamespace || null,
+      gitlab_project: glProject || null,
+      vercel_project_id: data.vercel_project_id || null,
+      cloudflare_worker_name: data.cloudflare_worker_name || null,
+      cloudflare_zone_id: data.cloudflare_zone_id || null,
     }
+
     if (editingProject) {
       await updateProject.mutateAsync({ id: editingProject.id, updates: payload })
     } else {
@@ -84,9 +115,14 @@ export default function Projects() {
     reset({})
   }
 
+  const githubOptions = githubRepos.data.map(r => ({ label: r.label, value: `${r.owner}/${r.repo}` }))
+  const gitlabOptions = gitlabProjects.data.map(p => ({ label: p.label, value: `${p.namespace}/${p.project}` }))
+  const vercelOptions = vercelProjects.data.map(p => ({ label: p.label, value: p.id }))
+  const workerOptions = cfResources.workers.map(w => ({ label: w.label, value: w.id }))
+  const zoneOptions = cfResources.zones.map(z => ({ label: z.label, value: z.id }))
+
   return (
     <div className="p-6 space-y-5 max-w-5xl mx-auto">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold">Projets</h1>
@@ -98,7 +134,6 @@ export default function Projects() {
         </Button>
       </div>
 
-      {/* Table */}
       {isLoading ? (
         <div className="space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -132,9 +167,9 @@ export default function Projects() {
                   <td className="px-4 py-3 font-medium">{p.name}</td>
                   <td className="px-4 py-3 hidden md:table-cell">
                     <div className="flex flex-wrap gap-1 text-[11px] text-muted-foreground">
-                      {p.github_repo && <span className="bg-muted px-1.5 py-0.5 rounded">GH: {p.github_owner}/{p.github_repo}</span>}
+                      {p.github_repo && <span className="bg-muted px-1.5 py-0.5 rounded">{p.github_owner}/{p.github_repo}</span>}
                       {p.gitlab_project && <span className="bg-muted px-1.5 py-0.5 rounded">GL: {p.gitlab_namespace}/{p.gitlab_project}</span>}
-                      {p.vercel_project_id && <span className="bg-muted px-1.5 py-0.5 rounded">Vercel: {p.vercel_project_id}</span>}
+                      {p.vercel_project_id && <span className="bg-muted px-1.5 py-0.5 rounded">▲ {p.vercel_project_id}</span>}
                       {p.cloudflare_worker_name && <span className="bg-muted px-1.5 py-0.5 rounded">CF: {p.cloudflare_worker_name}</span>}
                     </div>
                   </td>
@@ -163,60 +198,116 @@ export default function Projects() {
         </div>
       )}
 
-      {/* Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{editingProject ? 'Modifier le projet' : 'Nouveau projet'}</DialogTitle>
             <DialogDescription>
-              Configurez les services à surveiller pour ce projet.
+              Sélectionnez les services à surveiller depuis vos comptes connectés.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="name">Nom du projet *</Label>
-              <Input id="name" placeholder="mon-app" {...register('name')} />
+              <Controller name="name" control={control} render={({ field }) => (
+                <Input id="name" placeholder="mon-app" {...field} />
+              )} />
               {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">GitHub owner</Label>
-                <Input placeholder="guyboireau" {...register('github_owner')} />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">GitHub repo</Label>
-                <Input placeholder="mon-app" {...register('github_repo')} />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">GitLab namespace</Label>
-                <Input placeholder="guyboireau" {...register('gitlab_namespace')} />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">GitLab projet</Label>
-                <Input placeholder="mon-app" {...register('gitlab_project')} />
-              </div>
-            </div>
-
+            {/* GitHub */}
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Vercel project ID / slug</Label>
-              <Input placeholder="mon-app-prod" {...register('vercel_project_id')} />
+              <Label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                GitHub repo
+                {!isConnected('github') && <span className="text-amber-500">(non connecté)</span>}
+              </Label>
+              <Controller name="github_repo" control={control} render={({ field }) => (
+                <ResourceSelect
+                  options={githubOptions}
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  placeholder="Sélectionner un repo..."
+                  loading={githubRepos.loading}
+                  notConnectedMsg={!isConnected('github') ? 'Connectez GitHub dans Paramètres' : undefined}
+                />
+              )} />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Cloudflare Zone ID</Label>
-                <Input placeholder="abc123..." {...register('cloudflare_zone_id')} />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">CF Worker name</Label>
-                <Input placeholder="mon-worker" {...register('cloudflare_worker_name')} />
-              </div>
+            {/* GitLab */}
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                GitLab projet
+                {!isConnected('gitlab') && <span className="text-amber-500">(non connecté)</span>}
+              </Label>
+              <Controller name="gitlab_project" control={control} render={({ field }) => (
+                <ResourceSelect
+                  options={gitlabOptions}
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  placeholder="Sélectionner un projet..."
+                  loading={gitlabProjects.loading}
+                  notConnectedMsg={!isConnected('gitlab') ? 'Connectez GitLab dans Paramètres' : undefined}
+                />
+              )} />
             </div>
+
+            {/* Vercel */}
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                Vercel project
+                {!isConnected('vercel') && <span className="text-amber-500">(non connecté)</span>}
+              </Label>
+              <Controller name="vercel_project_id" control={control} render={({ field }) => (
+                <ResourceSelect
+                  options={vercelOptions}
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  placeholder="Sélectionner un projet Vercel..."
+                  loading={vercelProjects.loading}
+                  notConnectedMsg={!isConnected('vercel') ? 'Connectez Vercel dans Paramètres' : undefined}
+                />
+              )} />
+            </div>
+
+            {/* Cloudflare */}
+            {isConnected('cloudflare') ? (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">CF Worker</Label>
+                  <Controller name="cloudflare_worker_name" control={control} render={({ field }) => (
+                    <ResourceSelect
+                      options={workerOptions}
+                      value={field.value ?? ''}
+                      onChange={field.onChange}
+                      placeholder="Sélectionner..."
+                      loading={cfResources.loading}
+                    />
+                  )} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">CF Zone</Label>
+                  <Controller name="cloudflare_zone_id" control={control} render={({ field }) => (
+                    <ResourceSelect
+                      options={zoneOptions}
+                      value={field.value ?? ''}
+                      onChange={field.onChange}
+                      placeholder="Sélectionner..."
+                      loading={cfResources.loading}
+                    />
+                  )} />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  Cloudflare <span className="text-amber-500">(non connecté)</span>
+                </Label>
+                <div className="flex h-9 w-full items-center rounded-md border border-dashed border-input px-3 text-xs text-muted-foreground">
+                  Connectez Cloudflare dans Paramètres
+                </div>
+              </div>
+            )}
 
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="outline" size="sm" onClick={() => setDialogOpen(false)}>
