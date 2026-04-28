@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 224 71% 4%;
+    --card: 0 0% 100%;
+    --card-foreground: 224 71% 4%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 71% 4%;
+    --primary: 38 92% 50%;
+    --primary-foreground: 26 83% 14%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 9% 46%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 220 14% 96%;
+    --accent-foreground: 220 9% 15%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 38 92% 50%;
+    --radius: 0.5rem;
+    --sidebar: 222 47% 11%;
+    --sidebar-foreground: 213 31% 91%;
+    --sidebar-border: 215 28% 17%;
+    --sidebar-accent: 38 92% 50%;
+    --sidebar-accent-foreground: 26 83% 14%;
+  }
+
+  .dark {
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
+    --card: 222 47% 6%;
+    --card-foreground: 213 31% 91%;
+    --popover: 222 47% 6%;
+    --popover-foreground: 213 31% 91%;
+    --primary: 38 92% 50%;
+    --primary-foreground: 26 83% 14%;
+    --secondary: 215 28% 17%;
+    --secondary-foreground: 213 31% 91%;
+    --muted: 215 28% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 215 28% 17%;
+    --accent-foreground: 213 31% 91%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 213 31% 91%;
+    --border: 215 28% 17%;
+    --input: 215 28% 17%;
+    --ring: 38 92% 50%;
+    --sidebar: 222 47% 6%;
+    --sidebar-foreground: 213 31% 91%;
+    --sidebar-border: 215 28% 13%;
+    --sidebar-accent: 38 92% 50%;
+    --sidebar-accent-foreground: 26 83% 14%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  .status-success { @apply text-emerald-500; }
+  .status-failure { @apply text-red-500; }
+  .status-warning { @apply text-amber-500; }
+  .status-unknown { @apply text-muted-foreground; }
+}
