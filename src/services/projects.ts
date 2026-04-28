@@ -24,7 +24,7 @@ export async function getProjectsWithHealth(userId: string) {
 
 export async function createProject(
   userId: string,
-  project: Omit<Project, 'id' | 'user_id' | 'created_at' | 'enabled'>
+  project: Omit<Project, 'id' | 'user_id' | 'created_at' | 'enabled' | 'check_interval_minutes' | 'last_overall_status'>
 ): Promise<Project> {
   const { data, error } = await supabase
     .from('projects')

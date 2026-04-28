@@ -2,6 +2,8 @@ import { ExternalLink, CheckCircle2, XCircle, AlertTriangle, MinusCircle, GitBra
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { formatRelative, formatDate, statusBgColor } from '@/lib/utils'
 import { cn } from '@/lib/utils'
+import { useProjectHealthHistory } from '@/hooks/useHealth'
+import HealthChart from './HealthChart'
 import type { HealthStatus, HealthCheckResult } from '@/types'
 
 interface ServiceSectionProps {
@@ -28,7 +30,6 @@ function ServiceSection({ icon: Icon, label, status, data }: ServiceSectionProps
         {statusIcon}
       </div>
 
-      {/* Vercel deploy link */}
       {data?.url && (
         <a
           href={data.url}
@@ -41,14 +42,12 @@ function ServiceSection({ icon: Icon, label, status, data }: ServiceSectionProps
         </a>
       )}
 
-      {/* Error message */}
       {data?.error && (
         <div className="rounded-md bg-red-500/10 border border-red-500/20 px-3 py-2 text-xs text-red-600 font-mono">
           {data.error}
         </div>
       )}
 
-      {/* CI runs */}
       {data?.runs && data.runs.length > 0 && (
         <div className="space-y-1">
           {data.runs.map((run, i) => (
@@ -73,7 +72,6 @@ function ServiceSection({ icon: Icon, label, status, data }: ServiceSectionProps
         </div>
       )}
 
-      {/* Vercel branch + date */}
       {data?.branch && data.branch !== '—' && !data.runs && (
         <div className="text-xs text-muted-foreground">⎇ {data.branch} · {formatDate(data.created_at ?? null)}</div>
       )}
@@ -85,6 +83,7 @@ interface ProjectDetailDialogProps {
   open: boolean
   onOpenChange: (v: boolean) => void
   project: {
+    id?: string
     name: string
     github_repo?: string | null
     gitlab_project?: string | null
@@ -103,6 +102,8 @@ interface ProjectDetailDialogProps {
 }
 
 export default function ProjectDetailDialog({ open, onOpenChange, project }: ProjectDetailDialogProps) {
+  const { data: history = [] } = useProjectHealthHistory(open ? (project?.id ?? null) : null)
+
   if (!project) return null
 
   const services = [
@@ -114,7 +115,7 @@ export default function ProjectDetailDialog({ open, onOpenChange, project }: Pro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {project.name}
@@ -127,6 +128,12 @@ export default function ProjectDetailDialog({ open, onOpenChange, project }: Pro
         </DialogHeader>
 
         <div className="space-y-5 py-1">
+          {history.length > 0 && (
+            <div className="rounded-lg border bg-muted/30 p-3">
+              <HealthChart checks={history} />
+            </div>
+          )}
+
           {services.length === 0 ? (
             <p className="text-sm text-muted-foreground">Aucun service configuré.</p>
           ) : (

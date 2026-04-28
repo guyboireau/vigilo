@@ -7,7 +7,8 @@ import { formatDate } from '@/lib/utils'
 import KpiCard from '@/components/features/dashboard/KpiCard'
 import ProjectCard from '@/components/features/dashboard/ProjectCard'
 import ProjectDetailDialog from '@/components/features/dashboard/ProjectDetailDialog'
-import type { HealthStatus, HealthCheckResult } from '@/types'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import type { HealthStatus, HealthCheckResult, ProjectRow } from '@/types'
 
 export default function Dashboard() {
   const session = useSession()
@@ -16,16 +17,16 @@ export default function Dashboard() {
   const triggerCheck = useTriggerHealthCheck(userId)
   const deleteProject = useDeleteProject(userId)
 
-  const [selectedProject, setSelectedProject] = useState<any | null>(null)
+  const [selectedProject, setSelectedProject] = useState<ProjectRow | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
 
   const total = projects.length
-  const nominal = projects.filter((p: any) => !p.overall_status || p.overall_status === 'success').length
-  const warnings = projects.filter((p: any) => p.overall_status === 'warning').length
-  const errors = projects.filter((p: any) => p.overall_status === 'failure').length
+  const nominal = projects.filter((p: ProjectRow) => !p.overall_status || p.overall_status === 'success').length
+  const warnings = projects.filter((p: ProjectRow) => p.overall_status === 'warning').length
+  const errors = projects.filter((p: ProjectRow) => p.overall_status === 'failure' || p.overall_status === 'error').length
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold">Tableau de Bord</h1>
@@ -38,7 +39,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard label="Total projets" value={total} icon={FolderGit2} color="neutral" bar={100} />
         <KpiCard label="Nominal" value={nominal} icon={CheckCircle2} color="success" bar={total ? (nominal / total) * 100 : 0} />
@@ -46,7 +46,6 @@ export default function Dashboard() {
         <KpiCard label="Erreurs" value={errors} icon={XCircle} color="error" bar={total ? (errors / total) * 100 : 0} />
       </div>
 
-      {/* Projects grid */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold">État des Projets</h2>
@@ -69,7 +68,7 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {projects.map((p: any) => (
+            {(projects as ProjectRow[]).map((p) => (
               <ProjectCard
                 key={p.id}
                 id={p.id}
@@ -87,7 +86,7 @@ export default function Dashboard() {
                 checkedAt={p.checked_at}
                 onCardClick={() => setSelectedProject(p)}
                 onRefresh={() => triggerCheck.mutate(p.id)}
-                onDelete={() => deleteProject.mutate(p.id)}
+                onDelete={() => setDeleteTarget(p.id)}
                 refreshing={triggerCheck.isPending && triggerCheck.variables === p.id}
               />
             ))}
@@ -99,6 +98,7 @@ export default function Dashboard() {
         open={!!selectedProject}
         onOpenChange={open => { if (!open) setSelectedProject(null) }}
         project={selectedProject ? {
+          id: selectedProject.id,
           name: selectedProject.name,
           github_repo: selectedProject.github_repo,
           gitlab_project: selectedProject.gitlab_project,
@@ -114,6 +114,19 @@ export default function Dashboard() {
           cloudflare_data: selectedProject.cloudflare_data as HealthCheckResult,
           checked_at: selectedProject.checked_at,
         } : null}
+      />
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={open => { if (!open) setDeleteTarget(null) }}
+        title="Supprimer le projet"
+        description="Cette action est irréversible. Tout l'historique de ce projet sera supprimé."
+        confirmLabel="Supprimer"
+        destructive
+        loading={deleteProject.isPending}
+        onConfirm={() => {
+          if (deleteTarget) deleteProject.mutate(deleteTarget, { onSuccess: () => setDeleteTarget(null) })
+        }}
       />
     </div>
   )

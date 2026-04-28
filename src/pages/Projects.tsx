@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { ResourceSelect } from '@/components/ui/resource-select'
 import { useSession } from '@/hooks/useAuth'
 import { useProjectsWithHealth, useCreateProject, useUpdateProject, useDeleteProject } from '@/hooks/useProjects'
@@ -15,7 +16,7 @@ import { useLinkedAccounts } from '@/hooks/useIntegrations'
 import { getGithubRepos, getGitlabProjects, getVercelProjects, getCloudflareResources } from '@/services/resources'
 import type { GithubRepo, GitlabProject, VercelProject, CloudflareResources } from '@/services/resources'
 import StatusBadge from '@/components/features/dashboard/StatusBadge'
-import type { HealthStatus, Project } from '@/types'
+import type { HealthStatus, Project, ProjectRow } from '@/types'
 
 const schema = z.object({
   name: z.string().min(1, 'Nom requis'),
@@ -41,6 +42,7 @@ export default function Projects() {
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
 
   const [githubRepos, setGithubRepos] = useState<ResourceState<GithubRepo>>({ data: [], loading: false })
   const [gitlabProjects, setGitlabProjects] = useState<ResourceState<GitlabProject>>({ data: [], loading: false })
@@ -165,7 +167,7 @@ export default function Projects() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {projects.map((p: any) => (
+              {(projects as ProjectRow[]).map((p) => (
                 <tr key={p.id} className="bg-card hover:bg-muted/20 transition-colors">
                   <td className="px-4 py-3 font-medium">{p.name}</td>
                   <td className="px-4 py-3 hidden md:table-cell">
@@ -188,7 +190,7 @@ export default function Projects() {
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                        onClick={() => deleteProject.mutate(p.id)}
+                        onClick={() => setDeleteTarget(p.id)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
@@ -219,85 +221,45 @@ export default function Projects() {
               {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
             </div>
 
-            {/* GitHub */}
             <div className="space-y-1.5">
               <Label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                GitHub repo
-                {!isConnected('github') && <span className="text-amber-500">(non connecté)</span>}
+                GitHub repo {!isConnected('github') && <span className="text-amber-500">(non connecté)</span>}
               </Label>
               <Controller name="github_repo" control={control} render={({ field }) => (
-                <ResourceSelect
-                  options={githubOptions}
-                  value={field.value ?? ''}
-                  onChange={field.onChange}
-                  placeholder="Sélectionner un repo..."
-                  loading={githubRepos.loading}
-                  notConnectedMsg={!isConnected('github') ? 'Connectez GitHub dans Paramètres' : undefined}
-                />
+                <ResourceSelect options={githubOptions} value={field.value ?? ''} onChange={field.onChange} placeholder="Sélectionner un repo..." loading={githubRepos.loading} notConnectedMsg={!isConnected('github') ? 'Connectez GitHub dans Paramètres' : undefined} />
               )} />
             </div>
 
-            {/* GitLab */}
             <div className="space-y-1.5">
               <Label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                GitLab projet
-                {!isConnected('gitlab') && <span className="text-amber-500">(non connecté)</span>}
+                GitLab projet {!isConnected('gitlab') && <span className="text-amber-500">(non connecté)</span>}
               </Label>
               <Controller name="gitlab_project" control={control} render={({ field }) => (
-                <ResourceSelect
-                  options={gitlabOptions}
-                  value={field.value ?? ''}
-                  onChange={field.onChange}
-                  placeholder="Sélectionner un projet..."
-                  loading={gitlabProjects.loading}
-                  notConnectedMsg={!isConnected('gitlab') ? 'Connectez GitLab dans Paramètres' : undefined}
-                />
+                <ResourceSelect options={gitlabOptions} value={field.value ?? ''} onChange={field.onChange} placeholder="Sélectionner un projet..." loading={gitlabProjects.loading} notConnectedMsg={!isConnected('gitlab') ? 'Connectez GitLab dans Paramètres' : undefined} />
               )} />
             </div>
 
-            {/* Vercel */}
             <div className="space-y-1.5">
               <Label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                Vercel project
-                {!isConnected('vercel') && <span className="text-amber-500">(non connecté)</span>}
+                Vercel project {!isConnected('vercel') && <span className="text-amber-500">(non connecté)</span>}
               </Label>
               <Controller name="vercel_project_id" control={control} render={({ field }) => (
-                <ResourceSelect
-                  options={vercelOptions}
-                  value={field.value ?? ''}
-                  onChange={field.onChange}
-                  placeholder="Sélectionner un projet Vercel..."
-                  loading={vercelProjects.loading}
-                  notConnectedMsg={!isConnected('vercel') ? 'Connectez Vercel dans Paramètres' : undefined}
-                />
+                <ResourceSelect options={vercelOptions} value={field.value ?? ''} onChange={field.onChange} placeholder="Sélectionner un projet Vercel..." loading={vercelProjects.loading} notConnectedMsg={!isConnected('vercel') ? 'Connectez Vercel dans Paramètres' : undefined} />
               )} />
             </div>
 
-            {/* Cloudflare */}
             {isConnected('cloudflare') ? (
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">CF Worker</Label>
                   <Controller name="cloudflare_worker_name" control={control} render={({ field }) => (
-                    <ResourceSelect
-                      options={workerOptions}
-                      value={field.value ?? ''}
-                      onChange={field.onChange}
-                      placeholder="Sélectionner..."
-                      loading={cfResources.loading}
-                    />
+                    <ResourceSelect options={workerOptions} value={field.value ?? ''} onChange={field.onChange} placeholder="Sélectionner..." loading={cfResources.loading} />
                   )} />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">CF Zone</Label>
                   <Controller name="cloudflare_zone_id" control={control} render={({ field }) => (
-                    <ResourceSelect
-                      options={zoneOptions}
-                      value={field.value ?? ''}
-                      onChange={field.onChange}
-                      placeholder="Sélectionner..."
-                      loading={cfResources.loading}
-                    />
+                    <ResourceSelect options={zoneOptions} value={field.value ?? ''} onChange={field.onChange} placeholder="Sélectionner..." loading={cfResources.loading} />
                   )} />
                 </div>
               </div>
@@ -313,16 +275,25 @@ export default function Projects() {
             )}
 
             <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => setDialogOpen(false)}>
-                Annuler
-              </Button>
-              <Button type="submit" size="sm" loading={isSubmitting}>
-                {editingProject ? 'Enregistrer' : 'Créer'}
-              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => setDialogOpen(false)}>Annuler</Button>
+              <Button type="submit" size="sm" loading={isSubmitting}>{editingProject ? 'Enregistrer' : 'Créer'}</Button>
             </div>
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={open => { if (!open) setDeleteTarget(null) }}
+        title="Supprimer le projet"
+        description="Cette action est irréversible. Tout l'historique sera supprimé."
+        confirmLabel="Supprimer"
+        destructive
+        loading={deleteProject.isPending}
+        onConfirm={() => {
+          if (deleteTarget) deleteProject.mutate(deleteTarget, { onSuccess: () => setDeleteTarget(null) })
+        }}
+      />
     </div>
   )
 }

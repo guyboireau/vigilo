@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, FolderGit2, Settings, Shield, LogOut, Zap } from 'lucide-react'
+import { LayoutDashboard, FolderGit2, Settings, Shield, LogOut, Zap, Globe, LayoutGrid, Menu, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -9,6 +10,8 @@ import type { Profile } from '@/types'
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/projects', icon: FolderGit2, label: 'Projets' },
+  { to: '/monitors', icon: Globe, label: 'Moniteurs HTTP' },
+  { to: '/status-pages', icon: LayoutGrid, label: 'Status Pages' },
   { to: '/settings', icon: Settings, label: 'Paramètres' },
 ]
 
@@ -18,7 +21,7 @@ interface SidebarProps {
   analyzing: boolean
 }
 
-export default function Sidebar({ profile, onAnalyze, analyzing }: SidebarProps) {
+function SidebarContent({ profile, onAnalyze, analyzing, onClose }: SidebarProps & { onClose?: () => void }) {
   const signOut = useSignOut()
   const navigate = useNavigate()
 
@@ -35,23 +38,29 @@ export default function Sidebar({ profile, onAnalyze, analyzing }: SidebarProps)
 
   return (
     <aside className="flex h-screen w-56 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
-      {/* Logo */}
-      <div className="flex items-center gap-2.5 px-4 py-4 border-b border-sidebar-border">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-          <Shield className="h-4 w-4 text-primary-foreground" />
+      <div className="flex items-center justify-between px-4 py-4 border-b border-sidebar-border">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+            <Shield className="h-4 w-4 text-primary-foreground" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-white">CIdar</p>
+            <p className="text-[10px] text-sidebar-foreground/50 leading-none">Infra Health</p>
+          </div>
         </div>
-        <div>
-          <p className="text-sm font-bold text-white">CIdar</p>
-          <p className="text-[10px] text-sidebar-foreground/50 leading-none">Infra Health</p>
-        </div>
+        {onClose && (
+          <button onClick={onClose} className="text-sidebar-foreground/50 hover:text-sidebar-foreground md:hidden">
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
-      {/* Nav */}
       <nav className="flex-1 space-y-0.5 px-2 py-3">
         {navItems.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
             to={to}
+            onClick={onClose}
             className={({ isActive }) =>
               cn(
                 'flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors',
@@ -67,7 +76,6 @@ export default function Sidebar({ profile, onAnalyze, analyzing }: SidebarProps)
         ))}
       </nav>
 
-      {/* Analyze button */}
       <div className="px-3 pb-3">
         <Button
           className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
@@ -80,7 +88,6 @@ export default function Sidebar({ profile, onAnalyze, analyzing }: SidebarProps)
         </Button>
       </div>
 
-      {/* User */}
       <div className="border-t border-sidebar-border px-3 py-3 flex items-center gap-2.5">
         <Avatar className="h-7 w-7 shrink-0">
           <AvatarImage src={profile?.avatar_url ?? undefined} />
@@ -99,5 +106,41 @@ export default function Sidebar({ profile, onAnalyze, analyzing }: SidebarProps)
         </button>
       </div>
     </aside>
+  )
+}
+
+export default function Sidebar(props: SidebarProps) {
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  return (
+    <>
+      {/* Desktop */}
+      <div className="hidden md:flex">
+        <SidebarContent {...props} />
+      </div>
+
+      {/* Mobile hamburger */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between bg-sidebar border-b border-sidebar-border px-4 py-3">
+        <div className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
+            <Shield className="h-3.5 w-3.5 text-primary-foreground" />
+          </div>
+          <p className="text-sm font-bold text-white">CIdar</p>
+        </div>
+        <button onClick={() => setMobileOpen(true)} className="text-white">
+          <Menu className="h-5 w-5" />
+        </button>
+      </div>
+
+      {/* Mobile drawer overlay */}
+      {mobileOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
+          <div className="relative z-50">
+            <SidebarContent {...props} onClose={() => setMobileOpen(false)} />
+          </div>
+        </div>
+      )}
+    </>
   )
 }
