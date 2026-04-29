@@ -48,7 +48,7 @@ serve(async (req) => {
     } else if (provider === 'gitlab') {
       resources = await fetchAllPages(
         'https://gitlab.com/api/v4/projects?per_page=100&order_by=last_activity_at&membership=true&simple=true',
-        { 'PRIVATE-TOKEN': token },
+        { Authorization: `Bearer ${token}` },
         (item: Record<string, unknown>) => ({ label: item.path_with_namespace as string, namespace: (item.namespace as Record<string, unknown>)?.path as string, project: item.path as string })
       )
     } else if (provider === 'vercel') {

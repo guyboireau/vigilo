@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { CheckCircle2, XCircle, AlertTriangle, FolderGit2 } from 'lucide-react'
 import { useSession } from '@/hooks/useAuth'
-import { useProjectsWithHealth, useDeleteProject } from '@/hooks/useProjects'
+import { useProjectsWithHealth, useDeleteProject, useUpdateProject } from '@/hooks/useProjects'
 import { useTriggerHealthCheck } from '@/hooks/useHealth'
 import { formatDate } from '@/lib/utils'
 import KpiCard from '@/components/features/dashboard/KpiCard'
@@ -16,8 +16,10 @@ export default function Dashboard() {
   const { data: projects = [], isLoading, dataUpdatedAt } = useProjectsWithHealth(userId)
   const triggerCheck = useTriggerHealthCheck(userId)
   const deleteProject = useDeleteProject(userId)
+  const updateProject = useUpdateProject(userId)
 
   const [selectedProject, setSelectedProject] = useState<ProjectRow | null>(null)
+  const [editProject, setEditProject] = useState<ProjectRow | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
 
   const total = projects.length
@@ -73,7 +75,9 @@ export default function Dashboard() {
                 key={p.id}
                 id={p.id}
                 name={p.name}
+                githubOwner={p.github_owner}
                 githubRepo={p.github_repo}
+                gitlabNamespace={p.gitlab_namespace}
                 gitlabProject={p.gitlab_project}
                 vercelProjectId={p.vercel_project_id}
                 cloudflareZoneId={p.cloudflare_zone_id}
@@ -86,6 +90,7 @@ export default function Dashboard() {
                 checkedAt={p.checked_at}
                 onCardClick={() => setSelectedProject(p)}
                 onRefresh={() => triggerCheck.mutate(p.id)}
+                onEdit={() => setEditProject(p)}
                 onDelete={() => setDeleteTarget(p.id)}
                 refreshing={triggerCheck.isPending && triggerCheck.variables === p.id}
               />

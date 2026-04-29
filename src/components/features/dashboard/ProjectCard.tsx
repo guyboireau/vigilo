@@ -1,4 +1,4 @@
-import { GitBranch, GitFork, Globe, Cloud, RefreshCw, Trash2 } from 'lucide-react'
+import { GitBranch, GitFork, Globe, Cloud, RefreshCw, Trash2, Pencil } from 'lucide-react'
 import { cn, formatRelative, statusBgColor } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import StatusBadge from './StatusBadge'
@@ -7,7 +7,9 @@ import type { HealthStatus } from '@/types'
 interface ProjectCardProps {
   id: string
   name: string
+  githubOwner?: string | null
   githubRepo?: string | null
+  gitlabNamespace?: string | null
   gitlabProject?: string | null
   vercelProjectId?: string | null
   cloudflareZoneId?: string | null
@@ -20,6 +22,7 @@ interface ProjectCardProps {
   checkedAt?: string | null
   onRefresh?: () => void
   onDelete?: () => void
+  onEdit?: () => void
   onCardClick?: () => void
   refreshing?: boolean
 }
@@ -32,16 +35,16 @@ const overallBorder: Record<string, string> = {
 }
 
 export default function ProjectCard({
-  name, githubRepo, gitlabProject, vercelProjectId, cloudflareWorkerName,
+  name, githubOwner, githubRepo, gitlabNamespace, gitlabProject, vercelProjectId, cloudflareWorkerName,
   githubStatus, gitlabStatus, vercelStatus, cloudflareStatus, overallStatus,
-  checkedAt, onRefresh, onDelete, onCardClick, refreshing,
+  checkedAt, onRefresh, onDelete, onEdit, onCardClick, refreshing,
 }: ProjectCardProps) {
   const borderClass = overallStatus ? (overallBorder[overallStatus] ?? 'border-border') : 'border-border'
 
   const services = [
-    { icon: GitBranch, label: 'GitHub', status: githubStatus, show: !!githubRepo },
-    { icon: GitFork, label: 'GitLab', status: gitlabStatus, show: !!gitlabProject },
-    { icon: Globe, label: 'Vercel', status: vercelStatus, show: !!vercelProjectId },
+    { icon: GitBranch, label: 'GitHub', status: githubStatus, show: !!githubRepo, url: githubOwner && githubRepo ? `https://github.com/${githubOwner}/${githubRepo}` : undefined },
+    { icon: GitFork, label: 'GitLab', status: gitlabStatus, show: !!gitlabProject, url: gitlabNamespace && gitlabProject ? `https://gitlab.com/${gitlabNamespace}/${gitlabProject}` : undefined },
+    { icon: Globe, label: 'Vercel', status: vercelStatus, show: !!vercelProjectId, url: vercelProjectId ? `https://vercel.com/guyboireaus-projects/${vercelProjectId}` : undefined },
     { icon: Cloud, label: 'Cloudflare', status: cloudflareStatus, show: !!(cloudflareWorkerName) },
   ].filter(s => s.show)
 
@@ -83,10 +86,22 @@ export default function ProjectCard({
       {/* Services */}
       {services.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {services.map(({ icon: Icon, label, status }) => (
+          {services.map(({ icon: Icon, label, status, url }) => (
             <div key={label} className="flex items-center gap-1">
               <Icon className="h-3 w-3 text-muted-foreground" />
-              <StatusBadge status={status ?? 'unknown'} label={label} />
+              {url ? (
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline"
+                  onClick={e => e.stopPropagation()}
+                >
+                  <StatusBadge status={status ?? 'unknown'} label={label} />
+                </a>
+              ) : (
+                <StatusBadge status={status ?? 'unknown'} label={label} />
+              )}
             </div>
           ))}
         </div>
@@ -108,6 +123,17 @@ export default function ProjectCard({
           <RefreshCw className="h-3 w-3" />
           Vérifier
         </Button>
+        {onEdit && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+            onClick={onEdit}
+          >
+            <Pencil className="h-3 w-3" />
+            Modifier
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="sm"

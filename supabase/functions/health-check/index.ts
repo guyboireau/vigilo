@@ -65,7 +65,7 @@ async function checkGitLab(namespace: string, project: string, token: string): P
     const encoded = encodeURIComponent(`${namespace}/${project}`)
     const res = await fetch(
       `https://gitlab.com/api/v4/projects/${encoded}/pipelines?per_page=5`,
-      { headers: { 'PRIVATE-TOKEN': token } }
+      { headers: { Authorization: `Bearer ${token}` } }
     )
     if (res.status === 404) return { status: 'not_found' }
     if (!res.ok) return { status: 'error', error: `GitLab API ${res.status}` }
