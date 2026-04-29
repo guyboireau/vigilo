@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { CheckCircle2, XCircle, AlertTriangle, FolderGit2 } from 'lucide-react'
 import { useSession } from '@/hooks/useAuth'
-import { useProjectsWithHealth, useDeleteProject, useUpdateProject } from '@/hooks/useProjects'
+import { useProjectsWithHealth, useDeleteProject } from '@/hooks/useProjects'
 import { useTriggerHealthCheck } from '@/hooks/useHealth'
 import { formatDate } from '@/lib/utils'
 import KpiCard from '@/components/features/dashboard/KpiCard'
@@ -16,10 +16,9 @@ export default function Dashboard() {
   const { data: projects = [], isLoading, dataUpdatedAt } = useProjectsWithHealth(userId)
   const triggerCheck = useTriggerHealthCheck(userId)
   const deleteProject = useDeleteProject(userId)
-  const updateProject = useUpdateProject(userId)
 
   const [selectedProject, setSelectedProject] = useState<ProjectRow | null>(null)
-  const [editProject, setEditProject] = useState<ProjectRow | null>(null)
+  const [, setEditProject] = useState<ProjectRow | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
 
   const total = projects.length
@@ -105,7 +104,9 @@ export default function Dashboard() {
         project={selectedProject ? {
           id: selectedProject.id,
           name: selectedProject.name,
+          github_owner: selectedProject.github_owner,
           github_repo: selectedProject.github_repo,
+          gitlab_namespace: selectedProject.gitlab_namespace,
           gitlab_project: selectedProject.gitlab_project,
           vercel_project_id: selectedProject.vercel_project_id,
           cloudflare_worker_name: selectedProject.cloudflare_worker_name,

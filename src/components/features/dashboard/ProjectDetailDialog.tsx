@@ -11,9 +11,10 @@ interface ServiceSectionProps {
   label: string
   status: HealthStatus | null
   data: HealthCheckResult | null
+  serviceUrl?: string
 }
 
-function ServiceSection({ icon: Icon, label, status, data }: ServiceSectionProps) {
+function ServiceSection({ icon: Icon, label, status, data, serviceUrl }: ServiceSectionProps) {
   if (!status) return null
 
   const statusIcon = {
@@ -43,8 +44,19 @@ function ServiceSection({ icon: Icon, label, status, data }: ServiceSectionProps
       )}
 
       {data?.error && (
-        <div className="rounded-md bg-red-500/10 border border-red-500/20 px-3 py-2 text-xs text-red-600 font-mono">
-          {data.error}
+        <div className="rounded-md bg-red-500/10 border border-red-500/20 px-3 py-2 text-xs text-red-600 space-y-1.5">
+          <p className="font-mono">{data.error}</p>
+          {serviceUrl && (
+            <a
+              href={serviceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-red-700 hover:underline font-medium"
+            >
+              <ExternalLink className="h-3 w-3" />
+              Ouvrir {label}
+            </a>
+          )}
         </div>
       )}
 
@@ -85,7 +97,9 @@ interface ProjectDetailDialogProps {
   project: {
     id?: string
     name: string
+    github_owner?: string | null
     github_repo?: string | null
+    gitlab_namespace?: string | null
     gitlab_project?: string | null
     vercel_project_id?: string | null
     cloudflare_worker_name?: string | null
@@ -107,9 +121,9 @@ export default function ProjectDetailDialog({ open, onOpenChange, project }: Pro
   if (!project) return null
 
   const services = [
-    { icon: GitBranch, label: 'GitHub Actions', status: project.github_status ?? null, data: project.github_data ?? null, show: !!project.github_repo },
-    { icon: GitFork, label: 'GitLab CI', status: project.gitlab_status ?? null, data: project.gitlab_data ?? null, show: !!project.gitlab_project },
-    { icon: Globe, label: 'Vercel', status: project.vercel_status ?? null, data: project.vercel_data ?? null, show: !!project.vercel_project_id },
+    { icon: GitBranch, label: 'GitHub Actions', status: project.github_status ?? null, data: project.github_data ?? null, show: !!project.github_repo, serviceUrl: project.github_owner && project.github_repo ? `https://github.com/${project.github_owner}/${project.github_repo}` : undefined },
+    { icon: GitFork, label: 'GitLab CI', status: project.gitlab_status ?? null, data: project.gitlab_data ?? null, show: !!project.gitlab_project, serviceUrl: project.gitlab_namespace && project.gitlab_project ? `https://gitlab.com/${project.gitlab_namespace}/${project.gitlab_project}` : undefined },
+    { icon: Globe, label: 'Vercel', status: project.vercel_status ?? null, data: project.vercel_data ?? null, show: !!project.vercel_project_id, serviceUrl: project.vercel_project_id ? `https://vercel.com/guyboireaus-projects/${project.vercel_project_id}` : undefined },
     { icon: Cloud, label: 'Cloudflare', status: project.cloudflare_status ?? null, data: project.cloudflare_data ?? null, show: !!project.cloudflare_worker_name },
   ].filter(s => s.show)
 
@@ -138,7 +152,7 @@ export default function ProjectDetailDialog({ open, onOpenChange, project }: Pro
             <p className="text-sm text-muted-foreground">Aucun service configuré.</p>
           ) : (
             services.map(s => (
-              <ServiceSection key={s.label} icon={s.icon} label={s.label} status={s.status} data={s.data} />
+              <ServiceSection key={s.label} icon={s.icon} label={s.label} status={s.status} data={s.data} serviceUrl={s.serviceUrl} />
             ))
           )}
         </div>
