@@ -106,12 +106,23 @@ serve(async (req) => {
 
   try {
     const url = new URL(req.url)
-    const provider = url.searchParams.get('provider') as Provider | null
     const code = url.searchParams.get('code')
-    const state = url.searchParams.get('state') // contains user_id
+    const rawState = url.searchParams.get('state') // contains user_id:provider
 
-    if (!provider || !code || !state) {
-      return new Response(JSON.stringify({ error: 'Missing provider, code or state' }), {
+    if (!code || !rawState) {
+      return new Response(JSON.stringify({ error: 'Missing code or state' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Decode state: userId:provider
+    const stateParts = decodeURIComponent(rawState).split(':')
+    const userId = stateParts[0]
+    const provider = (stateParts[1] ?? '') as Provider
+
+    if (!userId || !provider) {
+      return new Response(JSON.stringify({ error: 'Invalid state format' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -130,15 +141,13 @@ serve(async (req) => {
     )
 
     // Verify state = valid user_id
-    const { data: userData, error: userErr } = await supabase.auth.admin.getUserById(state)
+    const { data: userData, error: userErr } = await supabase.auth.admin.getUserById(userId)
     if (userErr || !userData.user) {
       return new Response(JSON.stringify({ error: 'Invalid state' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
-
-    const userId = state
 
     // Exchange code for token
     let tokenRes: TokenResponse

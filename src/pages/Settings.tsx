@@ -76,7 +76,8 @@ const PROVIDERS: {
 
 function getOAuthUrl(provider: Provider, userId: string): string {
   const redirectUri = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oauth-callback`
-  const state = encodeURIComponent(userId)
+  // Encode provider in state since OAuth providers only return code + state
+  const state = encodeURIComponent(`${userId}:${provider}`)
 
   if (provider === 'github') {
     const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID
