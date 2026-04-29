@@ -24,7 +24,7 @@ const notifSchema = z.object({
 })
 type NotifForm = z.infer<typeof notifSchema>
 
-const OAUTH_PROVIDERS = new Set<Provider>(['github', 'gitlab'])
+const OAUTH_PROVIDERS = new Set<Provider>(['github', 'gitlab', 'vercel'])
 
 const PROVIDERS: {
   id: Provider
@@ -60,9 +60,10 @@ const PROVIDERS: {
     id: 'vercel',
     label: 'Vercel',
     icon: Globe,
-    description: 'Surveille les déploiements Vercel. Nécessite un Access Token depuis les paramètres Vercel.',
+    description: 'Surveille les déploiements Vercel. Connexion OAuth automatique — aucun token à copier.',
     placeholder: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-    docsUrl: 'https://vercel.com/account/tokens',
+    docsUrl: 'https://vercel.com/dashboard/integrations',
+    oauth: true,
   },
   {
     id: 'cloudflare',
@@ -87,6 +88,11 @@ function getOAuthUrl(provider: Provider, userId: string): string {
   if (provider === 'gitlab') {
     const clientId = import.meta.env.VITE_GITLAB_CLIENT_ID
     return `https://gitlab.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent('read_api')}&state=${state}`
+  }
+
+  if (provider === 'vercel') {
+    const clientId = import.meta.env.VITE_VERCEL_CLIENT_ID
+    return `https://vercel.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`
   }
 
   return ''
