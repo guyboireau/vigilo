@@ -10,7 +10,7 @@ import { useSession } from '@/hooks/useAuth'
 import { useOrg } from '@/contexts/OrgContext'
 import { useAudits, useCreateAudit, useDeleteAudit, useScanUrl } from '@/hooks/useUxAudits'
 import { getSeverityLabel } from '@/services/uxAudits'
-import type { UxAuditPattern } from '@/services/uxAudits'
+import type { UxAuditPattern } from '@/types'
 
 const schema = z.object({
   url: z.string().url('URL invalide'),
@@ -147,7 +147,7 @@ export default function UxAudits() {
                 {isExpanded && audit.patterns?.length > 0 && (
                   <div className="border-t bg-muted/30 px-4 py-3 space-y-2">
                     {audit.patterns.map((pattern: UxAuditPattern) => (
-                      <div key={pattern.type} className={`rounded-md border px-3 py-2 ${SEVERITY_COLORS[pattern.severity]}`}>
+                      <div key={pattern.type} className={`rounded-md border px-3 py-2 ${SEVERITY_COLORS[pattern.severity as 'high' | 'medium' | 'low']}`}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <span>{PATTERN_ICONS[pattern.type] || '⚠️'}</span>

@@ -13,7 +13,7 @@ export async function getMonitors(userId: string): Promise<HttpMonitor[]> {
 
 export async function createMonitor(
   userId: string,
-  monitor: Pick<HttpMonitor, 'name' | 'url' | 'expected_status' | 'interval_minutes' | 'project_id'>
+  monitor: Pick<HttpMonitor, 'name' | 'url' | 'expected_status' | 'interval_minutes' | 'project_id' | 'org_id'>
 ): Promise<HttpMonitor> {
   const { data, error } = await supabase
     .from('http_monitors')

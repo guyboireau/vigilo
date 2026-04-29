@@ -240,3 +240,77 @@ export interface StyleCheck {
   issues: StyleIssue[]
   created_at: string
 }
+
+// ── Organizations & Billing ────────────────────────────────
+
+export interface Organization {
+  id: string
+  name: string
+  slug: string
+  owner_id: string
+  plan_id: string
+  created_at: string
+  updated_at: string
+}
+
+export type OrgRole = 'owner' | 'admin' | 'member'
+
+export interface OrgMember {
+  id: string
+  org_id: string
+  user_id: string
+  role: OrgRole
+  joined_at: string
+  profile?: Profile
+}
+
+export interface Invitation {
+  id: string
+  org_id: string
+  email: string
+  role: OrgRole
+  invited_by: string
+  token: string
+  expires_at: string
+  accepted_at: string | null
+  created_at: string
+}
+
+export interface OrgWithPlan extends Organization {
+  plan_name: string
+  plan_id: string
+  max_projects: number
+  max_monitors: number
+  max_members: number
+  max_status_pages: number
+  alerts_slack: boolean
+  price_monthly: number
+}
+
+export interface Plan {
+  id: string
+  name: string
+  description: string | null
+  max_projects: number
+  max_monitors: number
+  max_members: number
+  max_status_pages: number
+  alerts_slack: boolean
+  price_monthly: number
+  stripe_price_id: string | null
+  created_at: string
+}
+
+export interface Subscription {
+  id: string
+  org_id: string
+  plan_id: string
+  stripe_subscription_id: string | null
+  stripe_customer_id: string | null
+  status: 'active' | 'canceled' | 'past_due' | 'trialing' | 'inactive'
+  current_period_start: string
+  current_period_end: string
+  cancel_at_period_end: boolean
+  created_at: string
+  updated_at: string
+}

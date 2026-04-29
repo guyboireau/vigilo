@@ -15,7 +15,7 @@ export function useMonitors(userId: string) {
 export function useCreateMonitor(userId: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (m: Pick<HttpMonitor, 'name' | 'url' | 'expected_status' | 'interval_minutes' | 'project_id'>) =>
+    mutationFn: (m: Pick<HttpMonitor, 'name' | 'url' | 'expected_status' | 'interval_minutes' | 'project_id' | 'org_id'>) =>
       createMonitor(userId, m),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['monitors', userId] })

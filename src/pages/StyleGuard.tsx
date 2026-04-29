@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import {
-  PenTool, Check, Trash2, Plus, Save, X, FileText,
+  PenTool, Check, Trash2, FileText,
   AlertTriangle, Info, BookOpen
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -219,7 +219,7 @@ export default function StyleGuard() {
                       ))}
                     </div>
                   </div>
-                  {guide.rules?.custom_terms?.length > 0 && (
+                  {guide.rules?.custom_terms && guide.rules.custom_terms.length > 0 && (
                     <div className="space-y-1">
                       <p className="text-xs font-medium">Terminologie :</p>
                       <div className="text-xs space-y-0.5">

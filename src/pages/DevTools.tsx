@@ -19,7 +19,7 @@ import type { CodeSnippet } from '@/services/devTools'
 const snippetSchema = z.object({
   title: z.string().min(1, 'Titre requis'),
   code: z.string().min(1, 'Code requis'),
-  language: z.string().default('text'),
+  language: z.string().min(1, 'Langage requis'),
   tags: z.string().optional(),
 })
 type SnippetForm = z.infer<typeof snippetSchema>
