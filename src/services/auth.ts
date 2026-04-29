@@ -63,3 +63,11 @@ export async function updateProfile(userId: string, updates: { name?: string; av
   if (error) throw error
   return data
 }
+
+export async function completeOnboarding(userId: string) {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ onboarding_completed: true })
+    .eq('id', userId)
+  if (error) throw error
+}

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { useSession } from '@/hooks/useAuth'
 import { useUpsertLinkedAccount } from '@/hooks/useIntegrations'
 import { useCreateMonitor } from '@/hooks/useMonitors'
-import { supabase } from '@/lib/supabase'
+import { completeOnboarding } from '@/services/auth'
 import { useOrg } from '@/contexts/OrgContext'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -105,7 +105,7 @@ export default function Onboarding() {
 
   async function handleFinish() {
     if (!session?.user?.id) return
-    await supabase.from('profiles').update({ onboarding_completed: true }).eq('id', session.user.id)
+    await completeOnboarding(session.user.id)
     await queryClient.invalidateQueries({ queryKey: ['profile', session.user.id] })
     navigate('/dashboard')
   }

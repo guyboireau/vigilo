@@ -84,6 +84,7 @@ export interface ProjectRow extends Project {
 export interface HttpMonitor {
   id: string
   user_id: string
+  org_id: string | null
   project_id: string | null
   name: string
   url: string
@@ -284,7 +285,11 @@ export interface OrgWithPlan extends Organization {
   max_members: number
   max_status_pages: number
   alerts_slack: boolean
+  alerts_discord: boolean
   price_monthly: number
+  current_period_end: string | null
+  cancel_at_period_end: boolean
+  subscription_status: string | null
 }
 
 export interface Plan {
@@ -296,6 +301,7 @@ export interface Plan {
   max_members: number
   max_status_pages: number
   alerts_slack: boolean
+  alerts_discord: boolean
   price_monthly: number
   stripe_price_id: string | null
   created_at: string

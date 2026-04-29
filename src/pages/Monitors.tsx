@@ -47,14 +47,13 @@ export default function Monitors() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
-    resolver: zodResolver(schema) as any,
+    resolver: zodResolver(schema),
     defaultValues: { expected_status: 200, interval_minutes: 15 },
   })
 
   async function onSubmit(data: FormData) {
-    await createMonitor.mutateAsync({ ...data, project_id: null })
+    await createMonitor.mutateAsync({ ...data, project_id: null, org_id: null })
     setDialogOpen(false)
     reset()
   }

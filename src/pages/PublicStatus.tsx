@@ -1,8 +1,7 @@
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { CheckCircle2, XCircle, AlertTriangle, MinusCircle, Shield } from 'lucide-react'
-import { getPublicStatusPage } from '@/services/statusPages'
-import { supabase } from '@/lib/supabase'
+import { getPublicStatusPage, getPublicProjects, getPublicMonitors } from '@/services/statusPages'
 import { formatRelative } from '@/lib/utils'
 import type { ProjectRow, HttpMonitor } from '@/types'
 
@@ -33,11 +32,7 @@ export default function PublicStatus() {
     queryKey: ['public-status-projects', page?.project_ids],
     queryFn: async () => {
       if (!page?.project_ids?.length) return []
-      const { data } = await supabase
-        .from('projects_with_latest_check')
-        .select('*')
-        .in('id', page.project_ids)
-      return (data ?? []) as ProjectRow[]
+      return getPublicProjects(page.project_ids)
     },
     enabled: !!page?.project_ids?.length,
   })
@@ -46,11 +41,7 @@ export default function PublicStatus() {
     queryKey: ['public-status-monitors', page?.http_monitor_ids],
     queryFn: async () => {
       if (!page?.http_monitor_ids?.length) return []
-      const { data } = await supabase
-        .from('http_monitors')
-        .select('id, name, url, last_status, last_checked_at, last_response_ms')
-        .in('id', page.http_monitor_ids)
-      return (data ?? []) as HttpMonitor[]
+      return getPublicMonitors(page.http_monitor_ids)
     },
     enabled: !!page?.http_monitor_ids?.length,
   })

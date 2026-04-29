@@ -27,7 +27,6 @@ const PRESENT_PATTERNS = /\b(is|are|has|does|goes|comes|says|makes|takes|gives|f
 
 export function analyzeStyle(content: string, rules?: StyleGuide['rules']): StyleCheckResult {
   const issues: StyleIssue[] = []
-  const paragraphs = content.split(/\n\n+/).filter(p => p.trim().length > 10)
   const words = content.split(/\s+/).filter(Boolean)
 
   const activeRules = {

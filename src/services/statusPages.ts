@@ -1,5 +1,21 @@
 import { supabase } from '@/lib/supabase'
-import type { StatusPage } from '@/types'
+import type { StatusPage, ProjectRow, HttpMonitor } from '@/types'
+
+export async function getPublicProjects(projectIds: string[]): Promise<ProjectRow[]> {
+  const { data } = await supabase
+    .from('projects_with_latest_check')
+    .select('*')
+    .in('id', projectIds)
+  return (data ?? []) as ProjectRow[]
+}
+
+export async function getPublicMonitors(monitorIds: string[]): Promise<HttpMonitor[]> {
+  const { data } = await supabase
+    .from('http_monitors')
+    .select('id, name, url, last_status, last_checked_at, last_response_ms')
+    .in('id', monitorIds)
+  return (data ?? []) as HttpMonitor[]
+}
 
 export async function getStatusPages(userId: string): Promise<StatusPage[]> {
   const { data, error } = await supabase
