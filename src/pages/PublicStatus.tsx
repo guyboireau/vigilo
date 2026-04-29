@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query'
 import { CheckCircle2, XCircle, AlertTriangle, MinusCircle, Shield } from 'lucide-react'
 import { getPublicStatusPage, getPublicProjects, getPublicMonitors } from '@/services/statusPages'
 import { formatRelative } from '@/lib/utils'
-import type { ProjectRow, HttpMonitor } from '@/types'
 
 function StatusIcon({ status }: { status: string | null }) {
   if (status === 'success' || status === 'up') return <CheckCircle2 className="h-5 w-5 text-emerald-500" />
