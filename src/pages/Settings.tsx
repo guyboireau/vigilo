@@ -24,6 +24,8 @@ const notifSchema = z.object({
 })
 type NotifForm = z.infer<typeof notifSchema>
 
+const OAUTH_PROVIDERS = new Set<Provider>(['github', 'gitlab'])
+
 const PROVIDERS: {
   id: Provider
   label: string
@@ -32,24 +34,27 @@ const PROVIDERS: {
   placeholder: string
   usernamePlaceholder?: string
   docsUrl: string
+  oauth?: boolean
 }[] = [
   {
     id: 'github',
     label: 'GitHub',
     icon: GitBranch,
-    description: 'Surveille les GitHub Actions. Nécessite un Personal Access Token avec scopes `repo` et `workflow`.',
+    description: 'Surveille les GitHub Actions. Connexion OAuth automatique — aucun token à copier.',
     placeholder: 'ghp_xxxxxxxxxxxxxxxxxxxx',
     usernamePlaceholder: 'guyboireau',
-    docsUrl: 'https://github.com/settings/tokens',
+    docsUrl: 'https://github.com/settings/developers',
+    oauth: true,
   },
   {
     id: 'gitlab',
     label: 'GitLab',
     icon: GitFork,
-    description: 'Surveille les pipelines CI/CD GitLab. Nécessite un Personal Access Token avec scope `read_api`.',
+    description: 'Surveille les pipelines CI/CD GitLab. Connexion OAuth automatique — aucun token à copier.',
     placeholder: 'glpat-xxxxxxxxxxxxxxxxxxxx',
     usernamePlaceholder: 'guyboireau',
-    docsUrl: 'https://gitlab.com/-/user_settings/personal_access_tokens',
+    docsUrl: 'https://gitlab.com/-/profile/applications',
+    oauth: true,
   },
   {
     id: 'vercel',
@@ -68,6 +73,23 @@ const PROVIDERS: {
     docsUrl: 'https://dash.cloudflare.com/profile/api-tokens',
   },
 ]
+
+function getOAuthUrl(provider: Provider, userId: string): string {
+  const redirectUri = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oauth-callback`
+  const state = encodeURIComponent(userId)
+
+  if (provider === 'github') {
+    const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID
+    return `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent('repo workflow')}&state=${state}`
+  }
+
+  if (provider === 'gitlab') {
+    const clientId = import.meta.env.VITE_GITLAB_CLIENT_ID
+    return `https://gitlab.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent('read_api')}&state=${state}`
+  }
+
+  return ''
+}
 
 interface ProviderCardProps {
   provider: typeof PROVIDERS[number]
@@ -198,7 +220,15 @@ export default function Settings() {
                 provider={provider}
                 isLinked={isLinked(provider.id)}
                 username={getAccount(provider.id)?.username}
-                onConnect={() => { setActiveProvider(provider.id); setTokenError(null); resetToken() }}
+                onConnect={() => {
+                  if (OAUTH_PROVIDERS.has(provider.id)) {
+                    window.location.href = getOAuthUrl(provider.id, userId)
+                  } else {
+                    setActiveProvider(provider.id)
+                    setTokenError(null)
+                    resetToken()
+                  }
+                }}
                 onDisconnect={() => remove.mutate(provider.id)}
                 loading={remove.isPending && remove.variables === provider.id}
               />
