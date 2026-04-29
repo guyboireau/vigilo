@@ -214,7 +214,7 @@ export default function StyleGuard() {
                   <div className="space-y-1">
                     <p className="text-xs font-medium">Règles actives :</p>
                     <div className="flex flex-wrap gap-1">
-                      {Object.entries(guide.rules || {}).filter(([_, v]) => v === true).map(([key]) => (
+                      {Object.entries(guide.rules || {}).filter(([, v]) => v === true).map(([key]) => (
                         <span key={key} className="text-[10px] px-1.5 py-0.5 rounded bg-muted">{key}</span>
                       ))}
                     </div>
