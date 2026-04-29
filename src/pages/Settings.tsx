@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useSession } from '@/hooks/useAuth'
 import { useLinkedAccounts, useUpsertLinkedAccount, useDeleteLinkedAccount } from '@/hooks/useIntegrations'
 import { useNotificationSettings, useUpsertNotificationSettings } from '@/hooks/useNotifications'
+import { supabase } from '@/lib/supabase'
 import type { Provider } from '@/types'
 
 const tokenSchema = z.object({ token: z.string().min(1, 'Token requis'), username: z.string().optional() })
@@ -91,8 +92,8 @@ function getOAuthUrl(provider: Provider, userId: string): string {
   }
 
   if (provider === 'vercel') {
-    const clientId = import.meta.env.VITE_VERCEL_CLIENT_ID
-    return `https://vercel.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`
+    // Vercel Integration uses installation page, not OAuth authorize
+    return 'https://vercel.com/integrations/cidar/new'
   }
 
   return ''
@@ -148,6 +149,7 @@ export default function Settings() {
 
   const [activeProvider, setActiveProvider] = useState<Provider | null>(null)
   const [tokenError, setTokenError] = useState<string | null>(null)
+  const [vercelConnecting, setVercelConnecting] = useState(false)
 
   const { register: regToken, handleSubmit: handleToken, reset: resetToken, formState: { errors: tokenErrors, isSubmitting: tokenSubmitting } } = useForm<TokenForm>({
     resolver: zodResolver(tokenSchema),
@@ -175,6 +177,42 @@ export default function Settings() {
       })
     }
   }, [notifSettings, resetNotif])
+
+  // Handle Vercel Integration callback
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    const code = url.searchParams.get('code')
+    const configurationId = url.searchParams.get('configurationId')
+    const error = url.searchParams.get('error')
+
+    if (error) {
+      setTokenError(`Vercel: ${error}`)
+      window.history.replaceState({}, '', window.location.pathname)
+      return
+    }
+
+    if (code && configurationId && userId) {
+      setVercelConnecting(true)
+      supabase.functions.invoke('vercel-exchange', {
+        body: { code, user_id: userId },
+      })
+        .then(({ data, error }) => {
+          if (error || data?.error) {
+            setTokenError(error?.message || data?.error || 'Erreur de connexion Vercel')
+          } else {
+            // Success — invalidate query to refresh linked accounts
+            window.location.reload()
+          }
+        })
+        .catch((err) => {
+          setTokenError(err instanceof Error ? err.message : 'Erreur de connexion Vercel')
+        })
+        .finally(() => {
+          setVercelConnecting(false)
+          window.history.replaceState({}, '', window.location.pathname)
+        })
+    }
+  }, [userId])
 
   function isLinked(id: Provider) { return accounts.some(a => a.provider === id) }
   function getAccount(id: Provider) { return accounts.find(a => a.provider === id) }
@@ -237,7 +275,7 @@ export default function Settings() {
                   }
                 }}
                 onDisconnect={() => remove.mutate(provider.id)}
-                loading={remove.isPending && remove.variables === provider.id}
+                loading={(remove.isPending && remove.variables === provider.id) || (provider.id === 'vercel' && vercelConnecting)}
               />
             ))}
           </div>
