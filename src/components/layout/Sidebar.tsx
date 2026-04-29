@@ -1,18 +1,31 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, FolderGit2, Settings, Shield, LogOut, Zap, Globe, LayoutGrid, Menu, X } from 'lucide-react'
+import { LayoutDashboard, FolderGit2, Settings, Shield, LogOut, Zap, Globe, LayoutGrid, Menu, X, CreditCard, Eye, Wrench, Accessibility, PenTool } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { useSignOut } from '@/hooks/useAuth'
+import { useOrg } from '@/contexts/OrgContext'
+import OrgSwitcher from './OrgSwitcher'
 import type { Profile } from '@/types'
+
+const PLAN_BADGE: Record<string, { label: string; className: string }> = {
+  free: { label: 'Free', className: 'bg-muted text-muted-foreground' },
+  solo: { label: 'Solo', className: 'bg-blue-500/20 text-blue-400 border border-blue-500/30' },
+  agency: { label: 'Agency', className: 'bg-amber-500/20 text-amber-400 border border-amber-500/30' },
+}
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/projects', icon: FolderGit2, label: 'Projets' },
   { to: '/monitors', icon: Globe, label: 'Moniteurs HTTP' },
   { to: '/status-pages', icon: LayoutGrid, label: 'Status Pages' },
+  { to: '/ux-audits', icon: Eye, label: 'Audit UX' },
+  { to: '/accessibility', icon: Accessibility, label: 'AccessLens' },
+  { to: '/style-guard', icon: PenTool, label: 'StyleGuard' },
+  { to: '/dev-tools', icon: Wrench, label: 'Dev Tools' },
   { to: '/settings', icon: Settings, label: 'Paramètres' },
+  { to: '/billing', icon: CreditCard, label: 'Facturation' },
 ]
 
 interface SidebarProps {
@@ -24,6 +37,7 @@ interface SidebarProps {
 function SidebarContent({ profile, onAnalyze, analyzing, onClose }: SidebarProps & { onClose?: () => void }) {
   const signOut = useSignOut()
   const navigate = useNavigate()
+  const { currentOrg } = useOrg()
 
   function handleSignOut() {
     signOut.mutate(undefined, { onSuccess: () => navigate('/login') })
@@ -36,6 +50,8 @@ function SidebarContent({ profile, onAnalyze, analyzing, onClose }: SidebarProps
     .join('')
     .toUpperCase() ?? '?'
 
+  const planBadge = currentOrg ? PLAN_BADGE[currentOrg.plan_id] ?? PLAN_BADGE.free : null
+
   return (
     <aside className="flex h-screen w-56 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
       <div className="flex items-center justify-between px-4 py-4 border-b border-sidebar-border">
@@ -44,15 +60,25 @@ function SidebarContent({ profile, onAnalyze, analyzing, onClose }: SidebarProps
             <Shield className="h-4 w-4 text-primary-foreground" />
           </div>
           <div>
-            <p className="text-sm font-bold text-white">CIdar</p>
+            <p className="text-sm font-bold text-white">Vigilo</p>
             <p className="text-[10px] text-sidebar-foreground/50 leading-none">Infra Health</p>
           </div>
         </div>
+        {planBadge && (
+          <span className={cn('text-[10px] font-semibold px-1.5 py-0.5 rounded', planBadge.className)}>
+            {planBadge.label}
+          </span>
+        )}
         {onClose && (
           <button onClick={onClose} className="text-sidebar-foreground/50 hover:text-sidebar-foreground md:hidden">
             <X className="h-4 w-4" />
           </button>
         )}
+      </div>
+
+      {/* Org switcher */}
+      <div className="px-2 py-2 border-b border-sidebar-border">
+        <OrgSwitcher />
       </div>
 
       <nav className="flex-1 space-y-0.5 px-2 py-3">
@@ -125,7 +151,7 @@ export default function Sidebar(props: SidebarProps) {
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
             <Shield className="h-3.5 w-3.5 text-primary-foreground" />
           </div>
-          <p className="text-sm font-bold text-white">CIdar</p>
+          <p className="text-sm font-bold text-white">Vigilo</p>
         </div>
         <button onClick={() => setMobileOpen(true)} className="text-white">
           <Menu className="h-5 w-5" />
