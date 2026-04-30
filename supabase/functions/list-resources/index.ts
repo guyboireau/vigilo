@@ -25,7 +25,7 @@ serve(async (req) => {
 
   const { data: account } = await supabase
     .from('linked_accounts')
-    .select('access_token, username')
+    .select('access_token, username, metadata')
     .eq('user_id', user.id)
     .eq('provider', provider)
     .single()
@@ -52,7 +52,9 @@ serve(async (req) => {
         (item: Record<string, unknown>) => ({ label: item.path_with_namespace as string, namespace: (item.namespace as Record<string, unknown>)?.path as string, project: item.path as string })
       )
     } else if (provider === 'vercel') {
-      const res = await fetch('https://api.vercel.com/v9/projects?limit=100', {
+      const teamId = (account.metadata as Record<string, unknown> | null)?.team_id as string | undefined
+      const teamParam = teamId ? `&teamId=${teamId}` : ''
+      const res = await fetch(`https://api.vercel.com/v9/projects?limit=100${teamParam}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       const data = await res.json()
@@ -62,22 +64,21 @@ serve(async (req) => {
         headers: { Authorization: `Bearer ${token}` },
       })
       const accData = await accRes.json()
-      const accountId = accData.result?.[0]?.id
-      if (!accountId) throw new Error('No Cloudflare account')
+      const accountId = accData.result?.[0]?.id as string | undefined
 
-      const [workersRes, zonesRes] = await Promise.all([
-        fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
+      const [workersData, zonesData] = await Promise.all([
+        accountId
+          ? fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts`, {
+              headers: { Authorization: `Bearer ${token}` },
+            }).then(r => r.json())
+          : Promise.resolve({ result: [] }),
         fetch('https://api.cloudflare.com/client/v4/zones?per_page=50', {
           headers: { Authorization: `Bearer ${token}` },
-        }),
+        }).then(r => r.json()),
       ])
-      const workers = await workersRes.json()
-      const zones = await zonesRes.json()
       resources = {
-        workers: (workers.result ?? []).map((w: Record<string, unknown>) => ({ label: w.id as string, id: w.id as string })),
-        zones: (zones.result ?? []).map((z: Record<string, unknown>) => ({ label: `${z.name} (${z.id})`, id: z.id as string, name: z.name as string })),
+        workers: (workersData.result ?? []).map((w: Record<string, unknown>) => ({ label: w.id as string, id: w.id as string })),
+        zones: (zonesData.result ?? []).map((z: Record<string, unknown>) => ({ label: `${z.name} (${z.id})`, id: z.id as string, name: z.name as string })),
       } as unknown as unknown[]
     }
 

@@ -73,7 +73,7 @@ serve(async (req) => {
           provider: 'vercel',
           access_token: tokenRes.access_token,
           username: username ?? null,
-          metadata: { scope: tokenRes.scope ?? null },
+          metadata: { scope: tokenRes.scope ?? null, team_id: tokenRes.team_id ?? null },
         },
         { onConflict: 'user_id,provider' }
       )
