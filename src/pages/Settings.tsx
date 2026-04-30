@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -139,6 +140,7 @@ function ProviderCard({ provider, isLinked, username, onConnect, onDisconnect, l
 }
 
 export default function Settings() {
+  const queryClient = useQueryClient()
   const session = useSession()
   const userId = session?.user?.id ?? ''
   const { data: accounts = [], isLoading } = useLinkedAccounts(userId)
@@ -178,7 +180,7 @@ export default function Settings() {
     }
   }, [notifSettings, resetNotif])
 
-  // Handle Vercel Integration callback
+  // Handle Vercel Integration callback (direct redirect to /settings)
   useEffect(() => {
     const url = new URL(window.location.href)
     const code = url.searchParams.get('code')
@@ -200,8 +202,8 @@ export default function Settings() {
           if (error || data?.error) {
             setTokenError(error?.message || data?.error || 'Erreur de connexion Vercel')
           } else {
-            // Success — invalidate query to refresh linked accounts
-            window.location.reload()
+            window.history.replaceState({}, '', window.location.pathname)
+            queryClient.invalidateQueries({ queryKey: ['linked-accounts', userId] })
           }
         })
         .catch((err) => {
@@ -209,10 +211,19 @@ export default function Settings() {
         })
         .finally(() => {
           setVercelConnecting(false)
-          window.history.replaceState({}, '', window.location.pathname)
         })
     }
-  }, [userId])
+  }, [userId, queryClient])
+
+  // Handle OAuth callback redirect from edge function (?connected=provider)
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    const connected = url.searchParams.get('connected')
+    if (connected && ['github', 'gitlab', 'vercel'].includes(connected) && userId) {
+      queryClient.invalidateQueries({ queryKey: ['linked-accounts', userId] })
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [userId, queryClient])
 
   function isLinked(id: Provider) { return accounts.some(a => a.provider === id) }
   function getAccount(id: Provider) { return accounts.find(a => a.provider === id) }
