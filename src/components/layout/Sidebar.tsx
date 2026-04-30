@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, FolderGit2, Settings, Shield, LogOut, Zap, Globe, LayoutGrid, Menu, X, CreditCard, Eye, Wrench, Accessibility, PenTool } from 'lucide-react'
+import { LayoutDashboard, FolderGit2, Settings, LogOut, Zap, Globe, LayoutGrid, Menu, X, CreditCard, Eye, Wrench, Accessibility, PenTool } from 'lucide-react'
+import { Logo } from '@/components/ui/logo'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -56,9 +57,7 @@ function SidebarContent({ profile, onAnalyze, analyzing, onClose }: SidebarProps
     <aside className="flex h-screen w-56 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
       <div className="flex items-center justify-between px-4 py-4 border-b border-sidebar-border">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <Shield className="h-4 w-4 text-primary-foreground" />
-          </div>
+          <Logo size={32} />
           <div>
             <p className="text-sm font-bold text-white">Cidar</p>
             <p className="text-[10px] text-sidebar-foreground/50 leading-none">Infra Health</p>
@@ -148,9 +147,7 @@ export default function Sidebar(props: SidebarProps) {
       {/* Mobile hamburger */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between bg-sidebar border-b border-sidebar-border px-4 py-3">
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
-            <Shield className="h-3.5 w-3.5 text-primary-foreground" />
-          </div>
+          <Logo size={28} />
           <p className="text-sm font-bold text-white">Cidar</p>
         </div>
         <button onClick={() => setMobileOpen(true)} className="text-white">

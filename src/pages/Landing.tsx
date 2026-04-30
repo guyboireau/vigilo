@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Shield, CheckCircle2, Globe, Zap, LayoutGrid, Bell,
+  CheckCircle2, Globe, Zap, LayoutGrid, Bell,
   GitBranch, Building2, CreditCard, ArrowRight, Activity,
   ChevronDown, ChevronUp, Clock, AlertTriangle, TrendingUp,
   Mail, MessageSquare, Star
 } from 'lucide-react'
+import { Logo } from '@/components/ui/logo'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -236,9 +237,7 @@ export default function Landing() {
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
-              <Shield className="h-3.5 w-3.5 text-primary-foreground" />
-            </div>
+            <Logo size={28} />
             <span className="font-extrabold tracking-tight">Cidar</span>
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
@@ -567,9 +566,7 @@ export default function Landing() {
           <div className="flex flex-col md:flex-row items-start justify-between gap-8 mb-8">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
-                  <Shield className="h-3.5 w-3.5 text-primary-foreground" />
-                </div>
+                <Logo size={28} />
                 <span className="font-extrabold">Cidar</span>
               </div>
               <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
