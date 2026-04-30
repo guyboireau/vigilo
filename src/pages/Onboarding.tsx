@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Shield, GitBranch, Globe, CheckCircle2, ArrowRight, Zap } from 'lucide-react'
+import { GitBranch, Globe, CheckCircle2, ArrowRight, Zap } from 'lucide-react'
+import { Logo } from '@/components/ui/logo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -115,9 +116,7 @@ export default function Onboarding() {
       <div className="w-full max-w-lg space-y-8">
         {/* Logo */}
         <div className="flex flex-col items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
-            <Shield className="h-6 w-6 text-primary-foreground" />
-          </div>
+          <Logo size={48} />
           <h1 className="text-2xl font-extrabold">Bienvenue sur Cidar</h1>
           <p className="text-sm text-muted-foreground text-center">
             Configurez votre espace en 3 minutes.
