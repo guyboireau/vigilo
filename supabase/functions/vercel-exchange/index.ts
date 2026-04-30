@@ -27,7 +27,7 @@ serve(async (req) => {
         client_id: Deno.env.get('VERCEL_CLIENT_ID'),
         client_secret: Deno.env.get('VERCEL_CLIENT_SECRET'),
         code,
-        redirect_uri: `${Deno.env.get('APP_URL') ?? 'https://vigilo-omega.vercel.app'}/settings`,
+        redirect_uri: `${Deno.env.get('APP_URL') ?? 'https://cidar-omega.vercel.app'}/settings`,
       }),
     })
 

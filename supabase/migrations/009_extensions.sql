@@ -1,5 +1,5 @@
 -- ============================================================
--- Vigilo — Modules Extensions : Audit UX + Dev Tools
+-- Cidar — Modules Extensions : Audit UX + Dev Tools
 -- ============================================================
 
 -- ── UX Audits (DarkPatternDetector) ───────────────────────────

@@ -60,7 +60,7 @@ function SidebarContent({ profile, onAnalyze, analyzing, onClose }: SidebarProps
             <Shield className="h-4 w-4 text-primary-foreground" />
           </div>
           <div>
-            <p className="text-sm font-bold text-white">Vigilo</p>
+            <p className="text-sm font-bold text-white">Cidar</p>
             <p className="text-[10px] text-sidebar-foreground/50 leading-none">Infra Health</p>
           </div>
         </div>
@@ -151,7 +151,7 @@ export default function Sidebar(props: SidebarProps) {
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
             <Shield className="h-3.5 w-3.5 text-primary-foreground" />
           </div>
-          <p className="text-sm font-bold text-white">Vigilo</p>
+          <p className="text-sm font-bold text-white">Cidar</p>
         </div>
         <button onClick={() => setMobileOpen(true)} className="text-white">
           <Menu className="h-5 w-5" />

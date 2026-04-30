@@ -1,5 +1,5 @@
 -- ============================================================
--- Fix RLS on plans (Vigilo) + Jarvis CRM tables
+-- Fix RLS on plans (Cidar) + Jarvis CRM tables
 -- ============================================================
 
 -- PLANS: public read for authenticated users, service_role write only

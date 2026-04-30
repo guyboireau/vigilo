@@ -118,7 +118,7 @@ export default function Onboarding() {
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
             <Shield className="h-6 w-6 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-extrabold">Bienvenue sur Vigilo</h1>
+          <h1 className="text-2xl font-extrabold">Bienvenue sur Cidar</h1>
           <p className="text-sm text-muted-foreground text-center">
             Configurez votre espace en 3 minutes.
           </p>
@@ -133,7 +133,7 @@ export default function Onboarding() {
               <div className="space-y-2">
                 <h2 className="font-bold text-lg">Votre dashboard de monitoring</h2>
                 <p className="text-sm text-muted-foreground">
-                  Vigilo surveille vos projets web, vos déploiements et vos APIs — et vous alerte instantanément quand quelque chose tombe.
+                  Cidar surveille vos projets web, vos déploiements et vos APIs — et vous alerte instantanément quand quelque chose tombe.
                 </p>
               </div>
               <ul className="space-y-3">
@@ -221,7 +221,7 @@ export default function Onboarding() {
             <>
               <div className="space-y-1">
                 <h2 className="font-bold text-lg">Votre premier moniteur HTTP</h2>
-                <p className="text-sm text-muted-foreground">Entrez une URL à surveiller. Vigilo la pingera toutes les 5 minutes.</p>
+                <p className="text-sm text-muted-foreground">Entrez une URL à surveiller. Cidar la pingera toutes les 5 minutes.</p>
               </div>
 
               <div className="space-y-3">
@@ -266,7 +266,7 @@ export default function Onboarding() {
                   <p className="text-sm text-muted-foreground max-w-sm">
                     {skippedConnect && skippedMonitor
                       ? 'Vous pouvez tout configurer depuis le dashboard.'
-                      : 'Votre espace Vigilo est configuré. Ajoutez vos projets depuis le dashboard.'}
+                      : 'Votre espace Cidar est configuré. Ajoutez vos projets depuis le dashboard.'}
                   </p>
                 </div>
               </div>

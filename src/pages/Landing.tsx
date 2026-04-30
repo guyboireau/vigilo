@@ -25,7 +25,7 @@ const FEATURES = [
   {
     icon: LayoutGrid,
     title: 'Status pages clients',
-    description: 'Une URL publique par client : vigilo.app/status/mon-client. Ils voient l\'uptime en temps réel, vous prouvez que vous êtes là.',
+    description: 'Une URL publique par client : cidar.app/status/mon-client. Ils voient l\'uptime en temps réel, vous prouvez que vous êtes là.',
   },
   {
     icon: Bell,
@@ -48,7 +48,7 @@ const STEPS = [
   {
     number: '01',
     title: 'Connectez vos services',
-    description: 'GitHub, GitLab, Vercel, Cloudflare — collez vos tokens une fois, Vigilo fait le reste.',
+    description: 'GitHub, GitLab, Vercel, Cloudflare — collez vos tokens une fois, Cidar fait le reste.',
   },
   {
     number: '02',
@@ -68,7 +68,7 @@ const PLANS = [
     name: 'Gratuit',
     price: '0€',
     priceNote: 'pour toujours',
-    description: 'Pour tester Vigilo.',
+    description: 'Pour tester Cidar.',
     features: ['3 projets', '2 moniteurs HTTP', 'Alertes email', 'Dashboard temps réel'],
     notIncluded: ['Status pages', 'Slack / Discord', 'Rapport mensuel'],
     cta: 'Commencer gratuitement',
@@ -124,7 +124,7 @@ const FAQS = [
   },
   {
     q: 'Puis-je avoir plusieurs espaces pour différents clients ?',
-    a: 'Oui. Vous pouvez créer plusieurs espaces de travail (workspaces) dans Vigilo, un par client ou par contexte.',
+    a: 'Oui. Vous pouvez créer plusieurs espaces de travail (workspaces) dans Cidar, un par client ou par contexte.',
   },
   {
     q: 'La status page est-elle personnalisable ?',
@@ -239,7 +239,7 @@ export default function Landing() {
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
               <Shield className="h-3.5 w-3.5 text-primary-foreground" />
             </div>
-            <span className="font-extrabold tracking-tight">Vigilo</span>
+            <span className="font-extrabold tracking-tight">Cidar</span>
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-foreground transition-colors">Fonctionnalités</a>
@@ -267,7 +267,7 @@ export default function Landing() {
 
           <h1 className="text-5xl md:text-6xl font-extrabold leading-[1.1] tracking-tight">
             Vous livrez des sites.<br />
-            <span className="text-primary">Vigilo surveille qu'ils restent en ligne.</span>
+            <span className="text-primary">Cidar surveille qu'ils restent en ligne.</span>
           </h1>
 
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
@@ -304,7 +304,7 @@ export default function Landing() {
               </div>
               <div className="flex-1 flex justify-center">
                 <div className="bg-sidebar-border/50 rounded px-8 py-1 text-xs text-muted-foreground/60">
-                  app.vigilo.fr/dashboard
+                  app.cidar.fr/dashboard
                 </div>
               </div>
             </div>
@@ -370,7 +370,7 @@ export default function Landing() {
             "Le site de mon client est tombé et je l'ai su <span className="text-destructive underline decoration-wavy decoration-destructive/50">par lui</span>."
           </h2>
           <p className="text-muted-foreground leading-relaxed">
-            Vous avez livré, vous êtes passé à la suite. Mais un déploiement cassé, un certificat expiré, une base de données surchargée — et c'est votre client qui vous appelle en panique un dimanche matin. Vigilo vous alerte en premier, toujours.
+            Vous avez livré, vous êtes passé à la suite. Mais un déploiement cassé, un certificat expiré, une base de données surchargée — et c'est votre client qui vous appelle en panique un dimanche matin. Cidar vous alerte en premier, toujours.
           </p>
         </div>
       </section>
@@ -429,7 +429,7 @@ export default function Landing() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[
               {
-                quote: "Depuis que j'utilise Vigilo, mes clients ne m'appellent plus pour me dire que leur site est tombé — c'est moi qui les préviens. Ça m'a aidé à vendre 3 nouveaux contrats de maintenance en un mois.",
+                quote: "Depuis que j'utilise Cidar, mes clients ne m'appellent plus pour me dire que leur site est tombé — c'est moi qui les préviens. Ça m'a aidé à vendre 3 nouveaux contrats de maintenance en un mois.",
                 author: "Thomas R.",
                 role: "Développeur freelance, Paris",
                 stars: 5,
@@ -441,7 +441,7 @@ export default function Landing() {
                 stars: 5,
               },
               {
-                quote: "On gère 12 sites pour des TPE locales. Vigilo nous a fait gagner au moins 2h par semaine de surveillance manuelle. Le passage au plan Agency était une évidence.",
+                quote: "On gère 12 sites pour des TPE locales. Cidar nous a fait gagner au moins 2h par semaine de surveillance manuelle. Le passage au plan Agency était une évidence.",
                 author: "Studio Noma",
                 role: "Agence digitale, Bordeaux",
                 stars: 5,
@@ -540,7 +540,7 @@ export default function Landing() {
             Arrêtez d'apprendre les pannes<br />via WhatsApp.
           </h2>
           <p className="text-muted-foreground text-lg leading-relaxed">
-            Rejoignez les freelances qui utilisent Vigilo pour surveiller leurs projets, prévenir leurs clients et justifier leurs contrats de maintenance.
+            Rejoignez les freelances qui utilisent Cidar pour surveiller leurs projets, prévenir leurs clients et justifier leurs contrats de maintenance.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button
@@ -570,7 +570,7 @@ export default function Landing() {
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
                   <Shield className="h-3.5 w-3.5 text-primary-foreground" />
                 </div>
-                <span className="font-extrabold">Vigilo</span>
+                <span className="font-extrabold">Cidar</span>
               </div>
               <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
                 Monitoring DevOps conçu pour les freelances et agences web. Surveiller, alerter, rassurer.
@@ -596,7 +596,7 @@ export default function Landing() {
             </div>
           </div>
           <div className="border-t border-border/50 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-            <p>© 2026 Vigilo. Fait avec ☕ par un freelance, pour les freelances.</p>
+            <p>© 2026 Cidar. Fait avec ☕ par un freelance, pour les freelances.</p>
             <p>Paiements sécurisés par <span className="font-semibold text-foreground">Stripe</span></p>
           </div>
         </div>
