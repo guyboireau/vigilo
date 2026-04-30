@@ -16,7 +16,7 @@ const PLAN_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
 }
 
 const PLAN_DESCRIPTIONS: Record<string, string> = {
-  free: 'Pour découvrir et tester Vigilo.',
+  free: 'Pour découvrir et tester Cidar.',
   solo: 'Pour un freelance qui gère ses propres projets.',
   agency: 'Pour une agence ou équipe qui livre pour des clients.',
 }

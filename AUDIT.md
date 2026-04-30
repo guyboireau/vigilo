@@ -1,7 +1,7 @@
-# Audit technique — Vigilo
+# Audit technique — Cidar
 
 > Date : 2026-04-29
-> Projet : `/Users/guyboireau/Dev/vigilo`
+> Projet : `/Users/guyboireau/Dev/cidar`
 
 ---
 
@@ -123,7 +123,7 @@ Aucun marqueur `TODO`, `FIXME` ou `HACK` trouvé dans le code source utilisateur
 - Remplacer le `<select>` natif de `Monitors.tsx` par un composant Radix Select pour cohérence UI/UX.
 
 ### SEO
-- `index.html` titre = `CIdar` (ancien nom). Mettre à jour en `Vigilo`.
+- `index.html` titre = `CIdar` (ancien nom). Mettre à jour en `Cidar`.
 - Ajouter une meta description dans `index.html`.
 - Intégrer `react-helmet-async` pour gérer les `<title>` et `<meta>` par page.
 

@@ -1,4 +1,4 @@
-# Configuration OAuth — Vigilo
+# Configuration OAuth — Cidar
 
 ## Vue d'ensemble
 
@@ -21,7 +21,7 @@ Cloudflare reste en token manuel (pas d'OAuth public).
 1. Aller sur https://github.com/settings/developers
 2. Cliquer **New OAuth App**
 3. Remplir :
-   - **Application name** : `Vigilo`
+   - **Application name** : `Cidar`
    - **Homepage URL** : `https://votre-app.vercel.app` (ou `http://localhost:5173` en dev)
    - **Authorization callback URL** : `https://glvdyenokrgfzrdlgcvz.supabase.co/functions/v1/oauth-callback`
 4. Générer un **Client Secret**
@@ -32,7 +32,7 @@ Cloudflare reste en token manuel (pas d'OAuth public).
 1. Aller sur https://gitlab.com/-/profile/applications
 2. Cliquer **Add new application**
 3. Remplir :
-   - **Name** : `Vigilo`
+   - **Name** : `Cidar`
    - **Redirect URI** : `https://glvdyenokrgfzrdlgcvz.supabase.co/functions/v1/oauth-callback`
    - **Scopes** : cocher `read_api`
 4. Récupérer **Application ID** (= Client ID) et **Secret** (= Client Secret)

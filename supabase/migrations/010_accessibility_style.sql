@@ -1,5 +1,5 @@
 -- ============================================================
--- Vigilo — Modules Extensions : AccessLens + StyleGuard
+-- Cidar — Modules Extensions : AccessLens + StyleGuard
 -- ============================================================
 
 -- ── Accessibility Audits (AccessLens) ─────────────────────────
