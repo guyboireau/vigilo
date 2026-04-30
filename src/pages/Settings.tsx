@@ -71,7 +71,7 @@ const PROVIDERS: {
     id: 'cloudflare',
     label: 'Cloudflare',
     icon: Cloud,
-    description: 'Surveille les Workers et zones Cloudflare. API Token avec permissions `Zone:Read` et `Workers Scripts:Read`.',
+    description: 'Surveille les Workers et zones Cloudflare. API Token avec permissions `Account:Read`, `Zone:Read` et `Workers Scripts:Read`.',
     placeholder: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
     docsUrl: 'https://dash.cloudflare.com/profile/api-tokens',
   },

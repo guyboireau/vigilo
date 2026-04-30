@@ -45,7 +45,9 @@ async function checkGitHub(owner: string, repo: string, token: string): Promise<
 
     const hasFail = results.some(r => r.status === 'failure')
     const hasWarn = results.some(r => r.status === 'warning')
-    return { status: hasFail ? 'failure' : hasWarn ? 'warning' : 'success', runs: results }
+    const hasSuccess = results.some(r => r.status === 'success')
+    const hasRunning = results.some(r => r.status === 'running')
+    return { status: hasFail ? 'failure' : hasWarn ? 'warning' : hasSuccess ? 'success' : hasRunning ? 'running' : 'unknown', runs: results }
   } catch (err) {
     return { status: 'error', error: String(err) }
   }
@@ -81,7 +83,9 @@ async function checkGitLab(namespace: string, project: string, token: string): P
     }))
     const hasFail = results.some(r => r.status === 'failure')
     const hasWarn = results.some(r => r.status === 'warning')
-    return { status: hasFail ? 'failure' : hasWarn ? 'warning' : 'success', runs: results }
+    const hasSuccess = results.some(r => r.status === 'success')
+    const hasRunning = results.some(r => r.status === 'running')
+    return { status: hasFail ? 'failure' : hasWarn ? 'warning' : hasSuccess ? 'success' : hasRunning ? 'running' : 'unknown', runs: results }
   } catch (err) {
     return { status: 'error', error: String(err) }
   }
@@ -96,17 +100,19 @@ function mapGitlabStatus(s: string): HealthStatus {
 }
 
 // ── Vercel ───────────────────────────────────────────────────────────────────
-async function checkVercel(projectId: string, token: string): Promise<CheckResult> {
+async function checkVercel(projectId: string, token: string, teamId?: string): Promise<CheckResult> {
   try {
-    const projectRes = await fetch(`https://api.vercel.com/v9/projects/${projectId}`, {
+    const teamParam = teamId ? `?teamId=${teamId}` : ''
+    const projectRes = await fetch(`https://api.vercel.com/v9/projects/${projectId}${teamParam}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
     if (projectRes.status === 404) return { status: 'not_found' }
     if (!projectRes.ok) return { status: 'error', error: `Vercel API ${projectRes.status}` }
     const project = await projectRes.json()
 
+    const teamDeployParam = teamId ? `&teamId=${teamId}` : ''
     const deplRes = await fetch(
-      `https://api.vercel.com/v6/deployments?projectId=${project.id}&limit=1&state=READY,ERROR,CANCELED`,
+      `https://api.vercel.com/v6/deployments?projectId=${project.id}&limit=1&state=READY,ERROR,CANCELED${teamDeployParam}`,
       { headers: { Authorization: `Bearer ${token}` } }
     )
     if (!deplRes.ok) return { status: 'no_ci' }
@@ -280,11 +286,15 @@ async function checkUserProjects(
 ) {
   const { data: accounts } = await supabase
     .from('linked_accounts')
-    .select('provider, access_token')
+    .select('provider, access_token, metadata')
     .eq('user_id', userId)
 
   const tokens: Record<string, string> = {}
-  for (const a of accounts ?? []) tokens[a.provider] = a.access_token
+  const accountsMeta: Record<string, Record<string, unknown>> = {}
+  for (const a of accounts ?? []) {
+    tokens[a.provider] = a.access_token
+    accountsMeta[a.provider] = (a.metadata as Record<string, unknown>) ?? {}
+  }
 
   let q = supabase.from('projects').select('*').eq('user_id', userId).eq('enabled', true)
   if (projectId) q = q.eq('id', projectId)
@@ -306,7 +316,7 @@ async function checkUserProjects(
         ? checkGitLab(project.gitlab_namespace, project.gitlab_project, tokens.gitlab)
         : Promise.resolve(null),
       project.vercel_project_id && tokens.vercel
-        ? checkVercel(project.vercel_project_id, tokens.vercel)
+        ? checkVercel(project.vercel_project_id, tokens.vercel, accountsMeta.vercel?.team_id as string | undefined)
         : Promise.resolve(null),
       tokens.cloudflare
         ? checkCloudflare(tokens.cloudflare, project.cloudflare_worker_name, project.cloudflare_zone_id)
