@@ -188,14 +188,13 @@ export default function Settings() {
     const error = url.searchParams.get('error')
 
     if (error) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setTokenError(`Vercel: ${error}`)
+      queueMicrotask(() => setTokenError(`Vercel: ${error}`))
       window.history.replaceState({}, '', window.location.pathname)
       return
     }
 
     if (code && configurationId && userId) {
-      setVercelConnecting(true)
+      queueMicrotask(() => setVercelConnecting(true))
       supabase.functions.invoke('vercel-exchange', {
         body: { code, user_id: userId },
       })

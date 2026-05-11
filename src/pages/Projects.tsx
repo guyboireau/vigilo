@@ -41,7 +41,7 @@ export default function Projects() {
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
 
-  const isConnected = (p: string) => accounts.some(a => a.provider === p)
+  const isConnected = useCallback((p: string) => accounts.some(a => a.provider === p), [accounts])
 
   const { data: githubRepos = [], isLoading: githubLoading } = useGithubRepos(dialogOpen && isConnected('github'))
   const { data: gitlabProjects = [], isLoading: gitlabLoading } = useGitlabProjects(dialogOpen && isConnected('gitlab'))
