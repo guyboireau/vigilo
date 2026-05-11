@@ -43,8 +43,12 @@ export function statusBgColor(status: HealthStatus | null): string {
   switch (status) {
     case 'success': return 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
     case 'failure': return 'bg-red-500/10 text-red-600 border-red-500/20'
+    case 'error': return 'bg-red-500/10 text-red-600 border-red-500/20'
     case 'warning': return 'bg-amber-500/10 text-amber-600 border-amber-500/20'
     case 'running': return 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+    case 'no_ci': return 'bg-slate-500/10 text-slate-600 border-slate-500/20'
+    case 'not_found': return 'bg-orange-500/10 text-orange-600 border-orange-500/20'
+    case 'unknown': return 'bg-muted text-muted-foreground border-border'
     default: return 'bg-muted text-muted-foreground border-border'
   }
 }

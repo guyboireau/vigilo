@@ -30,8 +30,12 @@ interface ProjectCardProps {
 const overallBorder: Record<string, string> = {
   success: 'border-emerald-500/30',
   failure: 'border-red-500/40',
+  error: 'border-red-500/40',
   warning: 'border-amber-500/30',
   running: 'border-blue-500/30',
+  no_ci: 'border-slate-500/30',
+  not_found: 'border-orange-500/30',
+  unknown: 'border-border',
 }
 
 export default function ProjectCard({

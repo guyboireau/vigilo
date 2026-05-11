@@ -14,6 +14,7 @@ const Monitors = lazy(() => import('@/pages/Monitors'))
 const StatusPages = lazy(() => import('@/pages/StatusPages'))
 const PublicStatus = lazy(() => import('@/pages/PublicStatus'))
 const Billing = lazy(() => import('@/pages/Billing'))
+const Account = lazy(() => import('@/pages/Account'))
 const Onboarding = lazy(() => import('@/pages/Onboarding'))
 const Landing = lazy(() => import('@/pages/Landing'))
 const UxAudits = lazy(() => import('@/pages/UxAudits'))
@@ -56,6 +57,7 @@ export default function App() {
                 <Route path="/monitors" element={<Monitors />} />
                 <Route path="/status-pages" element={<StatusPages />} />
                 <Route path="/settings" element={<Settings />} />
+                <Route path="/account" element={<Account />} />
                 <Route path="/billing" element={<Billing />} />
                 <Route path="/ux-audits" element={<UxAudits />} />
                 <Route path="/dev-tools" element={<DevTools />} />
