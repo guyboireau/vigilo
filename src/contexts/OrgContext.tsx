@@ -24,6 +24,9 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   const [currentOrg, setCurrentOrgState] = useState<OrgWithPlan | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
+  // Référence stable pour éviter les dépendances changeantes
+  const userIdRef = session?.user?.id ?? null
+
   const loadOrgs = useCallback(async (userId: string, preferredOrgId?: string | null) => {
     try {
       const data = await getUserOrgs(userId)
@@ -39,29 +42,33 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    if (!session?.user?.id) {
-      setOrgs([])
-      setCurrentOrgState(null)
-      setIsLoading(false)
-      return
+    if (!userIdRef) {
+      // Réinitialisation différée pour éviter setState synchrone dans l'effect
+      const timer = setTimeout(() => {
+        setOrgs([])
+        setCurrentOrgState(null)
+        setIsLoading(false)
+      }, 0)
+      return () => clearTimeout(timer)
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoading(true)
-    loadOrgs(session.user.id, profile?.current_org_id)
-  }, [session?.user?.id, profile?.current_org_id, loadOrgs])
+    loadOrgs(userIdRef, profile?.current_org_id)
+  }, [userIdRef, profile?.current_org_id, loadOrgs])
 
   const switchOrg = useCallback(async (orgId: string) => {
-    if (!session?.user?.id) return
+    if (!userIdRef) return
     const org = orgs.find(o => o.id === orgId)
     if (!org) return
     setCurrentOrgState(org)
-    await setCurrentOrg(session.user.id, orgId)
+    await setCurrentOrg(userIdRef, orgId)
     queryClient.invalidateQueries()
-  }, [session?.user?.id, orgs, queryClient])
+  }, [userIdRef, orgs, queryClient])
 
   const refreshOrgs = useCallback(async () => {
-    if (!session?.user?.id) return
-    await loadOrgs(session.user.id, currentOrg?.id)
-  }, [session?.user?.id, currentOrg?.id, loadOrgs])
+    if (!userIdRef) return
+    await loadOrgs(userIdRef, currentOrg?.id)
+  }, [userIdRef, currentOrg?.id, loadOrgs])
 
   return (
     <OrgContext.Provider value={{ currentOrg, orgs, isLoading, switchOrg, refreshOrgs }}>
@@ -70,7 +77,8 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   )
 }
 
-export function useOrg(): OrgContextValue {
+// eslint-disable-next-line react-refresh/only-export-components
+export const useOrg = (): OrgContextValue => {
   const ctx = useContext(OrgContext)
   if (!ctx) throw new Error('useOrg must be used inside OrgProvider')
   return ctx

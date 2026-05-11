@@ -188,6 +188,7 @@ export default function Settings() {
     const error = url.searchParams.get('error')
 
     if (error) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTokenError(`Vercel: ${error}`)
       window.history.replaceState({}, '', window.location.pathname)
       return

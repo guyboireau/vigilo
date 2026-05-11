@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -13,8 +13,7 @@ import { useSession } from '@/hooks/useAuth'
 import { useProjectsWithHealth, useCreateProject, useUpdateProject, useDeleteProject } from '@/hooks/useProjects'
 import { useTriggerHealthCheck } from '@/hooks/useHealth'
 import { useLinkedAccounts } from '@/hooks/useIntegrations'
-import { getGithubRepos, getGitlabProjects, getVercelProjects, getCloudflareResources } from '@/services/resources'
-import type { GithubRepo, GitlabProject, VercelProject, CloudflareResources } from '@/services/resources'
+import { useGithubRepos, useGitlabProjects, useVercelProjects, useCloudflareResources } from '@/hooks/useResources'
 import StatusBadge from '@/components/features/dashboard/StatusBadge'
 import type { HealthStatus, Project, ProjectRow } from '@/types'
 
@@ -27,8 +26,6 @@ const schema = z.object({
   cloudflare_zone_id: z.string().optional(),
 })
 type FormData = z.infer<typeof schema>
-
-interface ResourceState<T> { data: T[]; loading: boolean }
 
 export default function Projects() {
   const session = useSession()
@@ -44,37 +41,16 @@ export default function Projects() {
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
 
-  const [githubRepos, setGithubRepos] = useState<ResourceState<GithubRepo>>({ data: [], loading: false })
-  const [gitlabProjects, setGitlabProjects] = useState<ResourceState<GitlabProject>>({ data: [], loading: false })
-  const [vercelProjects, setVercelProjects] = useState<ResourceState<VercelProject>>({ data: [], loading: false })
-  const [cfResources, setCfResources] = useState<{ workers: CloudflareResources['workers']; zones: CloudflareResources['zones']; loading: boolean }>({ workers: [], zones: [], loading: false })
-
   const isConnected = (p: string) => accounts.some(a => a.provider === p)
+
+  const { data: githubRepos = [], isLoading: githubLoading } = useGithubRepos(dialogOpen && isConnected('github'))
+  const { data: gitlabProjects = [], isLoading: gitlabLoading } = useGitlabProjects(dialogOpen && isConnected('gitlab'))
+  const { data: vercelProjects = [], isLoading: vercelLoading } = useVercelProjects(dialogOpen && isConnected('vercel'))
+  const { data: cfResources } = useCloudflareResources(dialogOpen && isConnected('cloudflare'))
 
   const { control, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
-
-  useEffect(() => {
-    if (!dialogOpen) return
-
-    if (isConnected('github') && githubRepos.data.length === 0) {
-      setGithubRepos({ data: [], loading: true })
-      getGithubRepos().then(d => setGithubRepos({ data: d, loading: false })).catch(() => setGithubRepos({ data: [], loading: false }))
-    }
-    if (isConnected('gitlab') && gitlabProjects.data.length === 0) {
-      setGitlabProjects({ data: [], loading: true })
-      getGitlabProjects().then(d => setGitlabProjects({ data: d, loading: false })).catch(() => setGitlabProjects({ data: [], loading: false }))
-    }
-    if (isConnected('vercel') && vercelProjects.data.length === 0) {
-      setVercelProjects({ data: [], loading: true })
-      getVercelProjects().then(d => setVercelProjects({ data: d, loading: false })).catch(() => setVercelProjects({ data: [], loading: false }))
-    }
-    if (isConnected('cloudflare') && cfResources.workers.length === 0 && cfResources.zones.length === 0) {
-      setCfResources(s => ({ ...s, loading: true }))
-      getCloudflareResources().then(d => setCfResources({ workers: d.workers ?? [], zones: d.zones ?? [], loading: false })).catch(() => setCfResources({ workers: [], zones: [], loading: false }))
-    }
-  }, [dialogOpen, accounts])
 
   function openCreate() {
     setEditingProject(null)
@@ -120,11 +96,11 @@ export default function Projects() {
     reset({})
   }
 
-  const githubOptions = githubRepos.data.map(r => ({ label: r.label, value: `${r.owner}/${r.repo}` }))
-  const gitlabOptions = gitlabProjects.data.map(p => ({ label: p.label, value: `${p.namespace}/${p.project}` }))
-  const vercelOptions = vercelProjects.data.map(p => ({ label: p.label, value: p.id }))
-  const workerOptions = cfResources.workers.map(w => ({ label: w.label, value: w.id }))
-  const zoneOptions = cfResources.zones.map(z => ({ label: z.label, value: z.id }))
+  const githubOptions = githubRepos.map(r => ({ label: r.label, value: `${r.owner}/${r.repo}` }))
+  const gitlabOptions = gitlabProjects.map(p => ({ label: p.label, value: `${p.namespace}/${p.project}` }))
+  const vercelOptions = vercelProjects.map(p => ({ label: p.label, value: p.id }))
+  const workerOptions = (cfResources?.workers ?? []).map(w => ({ label: w.label, value: w.id }))
+  const zoneOptions = (cfResources?.zones ?? []).map(z => ({ label: z.label, value: z.id }))
 
   return (
     <div className="p-6 space-y-5 max-w-5xl mx-auto">
@@ -226,7 +202,7 @@ export default function Projects() {
                 GitHub repo {!isConnected('github') && <span className="text-amber-500">(non connecté)</span>}
               </Label>
               <Controller name="github_repo" control={control} render={({ field }) => (
-                <ResourceSelect options={githubOptions} value={field.value ?? ''} onChange={field.onChange} placeholder="Sélectionner un repo..." loading={githubRepos.loading} notConnectedMsg={!isConnected('github') ? 'Connectez GitHub dans Paramètres' : undefined} />
+                <ResourceSelect options={githubOptions} value={field.value ?? ''} onChange={field.onChange} placeholder="Sélectionner un repo..." loading={githubLoading} notConnectedMsg={!isConnected('github') ? 'Connectez GitHub dans Paramètres' : undefined} />
               )} />
             </div>
 
@@ -235,7 +211,7 @@ export default function Projects() {
                 GitLab projet {!isConnected('gitlab') && <span className="text-amber-500">(non connecté)</span>}
               </Label>
               <Controller name="gitlab_project" control={control} render={({ field }) => (
-                <ResourceSelect options={gitlabOptions} value={field.value ?? ''} onChange={field.onChange} placeholder="Sélectionner un projet..." loading={gitlabProjects.loading} notConnectedMsg={!isConnected('gitlab') ? 'Connectez GitLab dans Paramètres' : undefined} />
+                <ResourceSelect options={gitlabOptions} value={field.value ?? ''} onChange={field.onChange} placeholder="Sélectionner un projet..." loading={gitlabLoading} notConnectedMsg={!isConnected('gitlab') ? 'Connectez GitLab dans Paramètres' : undefined} />
               )} />
             </div>
 
@@ -244,7 +220,7 @@ export default function Projects() {
                 Vercel project {!isConnected('vercel') && <span className="text-amber-500">(non connecté)</span>}
               </Label>
               <Controller name="vercel_project_id" control={control} render={({ field }) => (
-                <ResourceSelect options={vercelOptions} value={field.value ?? ''} onChange={field.onChange} placeholder="Sélectionner un projet Vercel..." loading={vercelProjects.loading} notConnectedMsg={!isConnected('vercel') ? 'Connectez Vercel dans Paramètres' : undefined} />
+                <ResourceSelect options={vercelOptions} value={field.value ?? ''} onChange={field.onChange} placeholder="Sélectionner un projet Vercel..." loading={vercelLoading} notConnectedMsg={!isConnected('vercel') ? 'Connectez Vercel dans Paramètres' : undefined} />
               )} />
             </div>
 
@@ -253,13 +229,13 @@ export default function Projects() {
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">CF Worker</Label>
                   <Controller name="cloudflare_worker_name" control={control} render={({ field }) => (
-                    <ResourceSelect options={workerOptions} value={field.value ?? ''} onChange={field.onChange} placeholder="Sélectionner..." loading={cfResources.loading} />
+                    <ResourceSelect options={workerOptions} value={field.value ?? ''} onChange={field.onChange} placeholder="Sélectionner..." loading={cfLoading} />
                   )} />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">CF Zone</Label>
                   <Controller name="cloudflare_zone_id" control={control} render={({ field }) => (
-                    <ResourceSelect options={zoneOptions} value={field.value ?? ''} onChange={field.onChange} placeholder="Sélectionner..." loading={cfResources.loading} />
+                    <ResourceSelect options={zoneOptions} value={field.value ?? ''} onChange={field.onChange} placeholder="Sélectionner..." loading={cfLoading} />
                   )} />
                 </div>
               </div>
