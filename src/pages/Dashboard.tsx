@@ -1,12 +1,14 @@
 import { useState } from 'react'
-import { CheckCircle2, XCircle, AlertTriangle, FolderGit2 } from 'lucide-react'
+import { CheckCircle2, XCircle, AlertTriangle, FolderGit2, FileText } from 'lucide-react'
 import { useSession } from '@/hooks/useAuth'
 import { useProjectsWithHealth, useDeleteProject } from '@/hooks/useProjects'
 import { useTriggerHealthCheck } from '@/hooks/useHealth'
 import { formatDate } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import KpiCard from '@/components/features/dashboard/KpiCard'
 import ProjectCard from '@/components/features/dashboard/ProjectCard'
 import ProjectDetailDialog from '@/components/features/dashboard/ProjectDetailDialog'
+import GlobalReportDialog from '@/components/features/dashboard/GlobalReportDialog'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import type { HealthStatus, HealthCheckResult, ProjectRow } from '@/types'
 
@@ -20,6 +22,7 @@ export default function Dashboard() {
   const [selectedProject, setSelectedProject] = useState<ProjectRow | null>(null)
   const [, setEditProject] = useState<ProjectRow | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
+  const [reportOpen, setReportOpen] = useState(false)
 
   const total = projects.length
   const nominal = projects.filter((p: ProjectRow) => !p.overall_status || p.overall_status === 'success').length
@@ -35,8 +38,20 @@ export default function Dashboard() {
             {dataUpdatedAt ? `Dernière mise à jour: ${formatDate(new Date(dataUpdatedAt).toISOString())}` : 'Chargement...'}
           </p>
         </div>
-        <div className="text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-md border">
-          {new Date().toLocaleString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs"
+            onClick={() => setReportOpen(true)}
+            disabled={projects.length === 0}
+          >
+            <FileText className="h-3.5 w-3.5" />
+            Rapport global
+          </Button>
+          <div className="text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-md border">
+            {new Date().toLocaleString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+          </div>
         </div>
       </div>
 
@@ -120,6 +135,12 @@ export default function Dashboard() {
           cloudflare_data: selectedProject.cloudflare_data as HealthCheckResult,
           checked_at: selectedProject.checked_at,
         } : null}
+      />
+
+      <GlobalReportDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        projects={projects as ProjectRow[]}
       />
 
       <ConfirmDialog

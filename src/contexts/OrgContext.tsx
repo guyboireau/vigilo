@@ -42,20 +42,20 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    if (!userIdRef) {
-      // Réinitialisation différée pour éviter setState synchrone dans l'effect
-      const timer = setTimeout(() => {
-        setOrgs([])
-        setCurrentOrgState(null)
-        setIsLoading(false)
-      }, 0)
-      return () => clearTimeout(timer)
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (!session?.user?.id) {
+      setOrgs([])
+      setCurrentOrgState(null)
+      setIsLoading(false)
+      return
     }
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoading(true)
-    loadOrgs(userIdRef, profile?.current_org_id)
-  }, [userIdRef, profile?.current_org_id, loadOrgs])
+    /* eslint-enable react-hooks/set-state-in-effect */
+    loadOrgs(session.user.id, profile?.current_org_id)
+  }, [session?.user?.id, profile?.current_org_id, loadOrgs])
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const switchOrg = useCallback(async (orgId: string) => {
     if (!userIdRef) return
     const org = orgs.find(o => o.id === orgId)
@@ -65,6 +65,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
     queryClient.invalidateQueries()
   }, [userIdRef, orgs, queryClient])
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const refreshOrgs = useCallback(async () => {
     if (!userIdRef) return
     await loadOrgs(userIdRef, currentOrg?.id)
@@ -78,7 +79,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
-export const useOrg = (): OrgContextValue => {
+export function useOrg(): OrgContextValue {
   const ctx = useContext(OrgContext)
   if (!ctx) throw new Error('useOrg must be used inside OrgProvider')
   return ctx
