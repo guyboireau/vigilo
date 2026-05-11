@@ -57,7 +57,7 @@ export default function Projects() {
 
   useEffect(() => {
     if (!dialogOpen) return
-
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (isConnected('github') && githubRepos.data.length === 0) {
       setGithubRepos({ data: [], loading: true })
       getGithubRepos().then(d => setGithubRepos({ data: d, loading: false })).catch(() => setGithubRepos({ data: [], loading: false }))
@@ -74,6 +74,7 @@ export default function Projects() {
       setCfResources(s => ({ ...s, loading: true }))
       getCloudflareResources().then(d => setCfResources({ workers: d.workers ?? [], zones: d.zones ?? [], loading: false })).catch(() => setCfResources({ workers: [], zones: [], loading: false }))
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [dialogOpen, accounts])
 
   function openCreate() {

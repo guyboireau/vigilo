@@ -71,8 +71,8 @@ export default function DevTools() {
   const [b64Output, setB64Output] = useState('')
 
   // Timestamp state
-  const [tsInput, setTsInput] = useState(Date.now().toString())
-  const [tsDate, setTsDate] = useState(new Date().toISOString())
+  const [tsInput, setTsInput] = useState(() => Date.now().toString())
+  const [tsDate, setTsDate] = useState(() => new Date().toISOString())
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<SnippetForm>({
     resolver: zodResolver(snippetSchema),

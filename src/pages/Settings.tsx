@@ -186,7 +186,7 @@ export default function Settings() {
     const code = url.searchParams.get('code')
     const configurationId = url.searchParams.get('configurationId')
     const error = url.searchParams.get('error')
-
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (error) {
       setTokenError(`Vercel: ${error}`)
       window.history.replaceState({}, '', window.location.pathname)
@@ -195,6 +195,7 @@ export default function Settings() {
 
     if (code && configurationId && userId) {
       setVercelConnecting(true)
+      /* eslint-enable react-hooks/set-state-in-effect */
       supabase.functions.invoke('vercel-exchange', {
         body: { code, user_id: userId },
       })

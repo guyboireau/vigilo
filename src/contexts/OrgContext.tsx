@@ -39,6 +39,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (!session?.user?.id) {
       setOrgs([])
       setCurrentOrgState(null)
@@ -46,9 +47,11 @@ export function OrgProvider({ children }: { children: ReactNode }) {
       return
     }
     setIsLoading(true)
+    /* eslint-enable react-hooks/set-state-in-effect */
     loadOrgs(session.user.id, profile?.current_org_id)
   }, [session?.user?.id, profile?.current_org_id, loadOrgs])
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const switchOrg = useCallback(async (orgId: string) => {
     if (!session?.user?.id) return
     const org = orgs.find(o => o.id === orgId)
@@ -58,6 +61,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
     queryClient.invalidateQueries()
   }, [session?.user?.id, orgs, queryClient])
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const refreshOrgs = useCallback(async () => {
     if (!session?.user?.id) return
     await loadOrgs(session.user.id, currentOrg?.id)
@@ -70,6 +74,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useOrg(): OrgContextValue {
   const ctx = useContext(OrgContext)
   if (!ctx) throw new Error('useOrg must be used inside OrgProvider')

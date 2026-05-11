@@ -1,10 +1,34 @@
-import { ExternalLink, CheckCircle2, XCircle, AlertTriangle, MinusCircle, GitBranch, GitFork, Globe, Cloud } from 'lucide-react'
+import { ExternalLink, CheckCircle2, XCircle, AlertTriangle, MinusCircle, GitBranch, GitFork, Globe, Cloud, AlertOctagon } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { formatRelative, formatDate, statusBgColor } from '@/lib/utils'
+import { formatRelative, formatDate, statusBgColor, statusColor } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { useProjectHealthHistory } from '@/hooks/useHealth'
 import HealthChart from './HealthChart'
-import type { HealthStatus, HealthCheckResult } from '@/types'
+import type { HealthStatus, HealthCheckResult, HealthCheckRun } from '@/types'
+
+function statusIcon(status: HealthStatus | null) {
+  switch (status) {
+    case 'success': return <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+    case 'failure': return <XCircle className="h-4 w-4 text-red-500" />
+    case 'error': return <AlertOctagon className="h-4 w-4 text-red-500" />
+    case 'warning': return <AlertTriangle className="h-4 w-4 text-amber-500" />
+    default: return <MinusCircle className="h-4 w-4 text-muted-foreground" />
+  }
+}
+
+function statusLabelFull(status: HealthStatus | null): string {
+  switch (status) {
+    case 'success': return 'Nominal'
+    case 'failure': return 'Échec'
+    case 'error': return 'Erreur API'
+    case 'warning': return 'Warning'
+    case 'running': return 'En cours'
+    case 'no_ci': return 'Pas de CI'
+    case 'not_found': return 'Introuvable'
+    case 'unknown': return 'Inconnu'
+    default: return '—'
+  }
+}
 
 interface ServiceSectionProps {
   icon: React.ComponentType<{ className?: string }>
@@ -14,38 +38,46 @@ interface ServiceSectionProps {
   serviceUrl?: string
 }
 
+function groupRunsByBranch(runs: HealthCheckRun[]): Record<string, HealthCheckRun[]> {
+  const groups: Record<string, HealthCheckRun[]> = {}
+  for (const run of runs) {
+    const branch = run.branch || 'default'
+    if (!groups[branch]) groups[branch] = []
+    groups[branch].push(run)
+  }
+  return groups
+}
+
 function ServiceSection({ icon: Icon, label, status, data, serviceUrl }: ServiceSectionProps) {
   if (!status) return null
 
-  const statusIcon = {
-    success: <CheckCircle2 className="h-4 w-4 text-emerald-500" />,
-    failure: <XCircle className="h-4 w-4 text-red-500" />,
-    warning: <AlertTriangle className="h-4 w-4 text-amber-500" />,
-  }[status as string] ?? <MinusCircle className="h-4 w-4 text-muted-foreground" />
+  const hasError = status === 'failure' || status === 'error'
+  const hasWarning = status === 'warning'
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</span>
-        {statusIcon}
+    <div className={cn(
+      'rounded-lg border p-4 space-y-3',
+      hasError ? 'border-red-500/20 bg-red-500/5' : hasWarning ? 'border-amber-500/20 bg-amber-500/5' : 'border-border bg-card'
+    )}>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Icon className="h-4 w-4 text-muted-foreground" />
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {statusIcon(status)}
+          <span className={cn('text-xs font-semibold', statusColor(status))}>{statusLabelFull(status)}</span>
+        </div>
       </div>
 
-      {data?.url && (
-        <a
-          href={data.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
-        >
-          <ExternalLink className="h-3 w-3" />
-          {data.url}
-        </a>
-      )}
-
+      {/* Error block */}
       {data?.error && (
-        <div className="rounded-md bg-red-500/10 border border-red-500/20 px-3 py-2 text-xs text-red-600 space-y-1.5">
-          <p className="font-mono">{data.error}</p>
+        <div className="rounded-md bg-red-500/10 border border-red-500/20 px-3 py-2.5 text-xs text-red-600 space-y-2">
+          <div className="flex items-start gap-2">
+            <AlertOctagon className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+            <p className="font-mono leading-relaxed">{data.error}</p>
+          </div>
           {serviceUrl && (
             <a
               href={serviceUrl}
@@ -60,32 +92,60 @@ function ServiceSection({ icon: Icon, label, status, data, serviceUrl }: Service
         </div>
       )}
 
+      {/* URL */}
+      {data?.url && !data.error && (
+        <a
+          href={data.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+        >
+          <ExternalLink className="h-3 w-3" />
+          {data.url}
+        </a>
+      )}
+
+      {/* Runs grouped by branch */}
       {data?.runs && data.runs.length > 0 && (
-        <div className="space-y-1">
-          {data.runs.map((run, i) => (
-            <div key={i} className={cn(
-              'flex items-center justify-between rounded-md px-3 py-1.5 text-xs border',
-              statusBgColor(run.status)
-            )}>
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="font-medium truncate">{run.workflow}</span>
-                {run.branch && <span className="text-[10px] opacity-60 shrink-0">⎇ {run.branch}</span>}
+        <div className="space-y-3">
+          {Object.entries(groupRunsByBranch(data.runs)).map(([branch, branchRuns]) => (
+            <div key={branch} className="space-y-1.5">
+              <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+                <GitBranch className="h-3 w-3" />
+                {branch}
+                <span className="text-[10px] opacity-60">({branchRuns.length})</span>
               </div>
-              <div className="flex items-center gap-2 shrink-0 ml-2">
-                <span className="text-[10px] opacity-60">{formatDate(run.updated_at)}</span>
-                {run.url && (
-                  <a href={run.url} target="_blank" rel="noopener noreferrer" className="opacity-70 hover:opacity-100">
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                )}
+              <div className="space-y-1">
+                {branchRuns.map((run, i) => (
+                  <div key={i} className={cn(
+                    'flex items-center justify-between rounded-md px-3 py-2 text-xs border',
+                    statusBgColor(run.status)
+                  )}>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-medium truncate">{run.workflow}</span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <span className="text-[10px] opacity-60">{formatDate(run.updated_at)}</span>
+                      {run.url && (
+                        <a href={run.url} target="_blank" rel="noopener noreferrer" className="opacity-70 hover:opacity-100">
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
         </div>
       )}
 
+      {/* Simple branch info (no runs) */}
       {data?.branch && data.branch !== '—' && !data.runs && (
-        <div className="text-xs text-muted-foreground">⎇ {data.branch} · {formatDate(data.created_at ?? null)}</div>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <GitBranch className="h-3 w-3" />
+          {data.branch} · {formatDate(data.created_at ?? null)}
+        </div>
       )}
     </div>
   )
