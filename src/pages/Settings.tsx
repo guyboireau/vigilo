@@ -194,7 +194,7 @@ export default function Settings() {
     }
 
     if (code && configurationId && userId) {
-      queueMicrotask(() => setVercelConnecting(true))
+      queueMicrotask(() => setVercelConnecting(true));
       supabase.functions.invoke('vercel-exchange', {
         body: { code, user_id: userId },
       })
